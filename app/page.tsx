@@ -4,6 +4,12 @@ import { Home, MapPin, Plus, Search, Users, Clock, Leaf, Heart, Trophy } from 'l
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { useState } from "react"
+import { dummyFoods } from '@/lib/data'
+import { FoodCard } from '@/components/FoodCard'
+import { Input } from '@/components/ui/input'
+import { Filter } from 'lucide-react'
+import Image from 'next/image'
 
 const impactStats = [
   { label: 'Meals Shared', value: '15M+' },
@@ -90,155 +96,115 @@ const recentActivities = [
 ]
 
 export default function HomePage() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
+  const categories = [
+    "All",
+    "Fruits",
+    "Vegetables",
+    "Dairy",
+    "Bakery",
+    "Canned Goods",
+    "Other"
+  ]
+
+  const filteredFoods = dummyFoods.filter(food => {
+    const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      food.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory = selectedCategory === null || selectedCategory === "All" || food.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
   return (
-    <main className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative bg-white">
-        <div className="absolute inset-0 bg-gradient-to-b from-green-50 to-white" />
-        <div className="relative container mx-auto px-4 py-16 md:py-24">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
-              Pass The Plate
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Transforming food accessibility. Strengthening community connections. Reducing waste.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white">
-                <Link href="/add-food" className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Share Food
-                </Link>
+      <div className="relative h-[60vh] w-full">
+        <Image
+          src="/images/karolina-kolodziejczak-1DNMBNQaQZE-unsplash.jpg"
+          alt="Community Banner"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/50 to-transparent" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Share Food, Share Joy
+          </h1>
+          <p className="text-lg md:text-xl text-green-50 max-w-2xl mb-12">
+            Join our community to reduce food waste and help those in need. Every contribution makes a difference.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 w-full max-w-2xl justify-center items-center">
+            <Button 
+              size="lg" 
+              className="w-[250px] h-12 text-lg font-bold bg-white/15 hover:bg-white/25 text-white shadow-[0_8px_16px_rgb(0_0_0/0.1)] hover:shadow-[0_8px_16px_rgb(0_0_0/0.2)] transition-all duration-300 rounded-2xl px-6 border-2 border-white/30 hover:border-white/40 backdrop-blur-sm flex items-center justify-center"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Start Sharing
+            </Button>
+            <Link href="/leaderboard" className="flex items-center justify-center">
+              <Button 
+                size="lg" 
+                className="w-[250px] h-12 text-lg font-bold bg-white/15 hover:bg-white/25 text-white shadow-[0_8px_16px_rgb(0_0_0/0.1)] hover:shadow-[0_8px_16px_rgb(0_0_0/0.2)] transition-all duration-300 rounded-2xl px-6 border-2 border-white/30 hover:border-white/40 backdrop-blur-sm flex items-center justify-center"
+              >
+                <Trophy className="w-5 h-5 mr-2" />
+                View Leaderboard
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                <Link href="/map-view" className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Find Food
-                </Link>
-              </Button>
-            </div>
+            </Link>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Impact Stats */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
-            {impactStats.map((stat, index) => (
-              <div key={index} className="text-center p-4">
-                <div className="text-2xl md:text-3xl font-bold text-green-600 mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </div>
-            ))}
+      <div className="container mx-auto px-4 py-8">
+        {/* Search and Filter Section */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600 h-4 w-4" />
+            <Input
+              placeholder="Search for food items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 border-green-200 focus:border-green-500 focus:ring-green-500"
+            />
           </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-semibold text-center mb-12 text-gray-900">What We Offer</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg">
-                <div className="text-green-600 mb-3">{feature.icon}</div>
-                <h3 className="font-medium text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Items */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900">Featured Food Items</h2>
-            <Button asChild variant="ghost" className="text-green-600">
-              <Link href="/map-view">View All</Link>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2 border-green-200 text-green-700 hover:bg-green-50">
+              <MapPin className="h-4 w-4" />
+              Location
+            </Button>
+            <Button variant="outline" className="gap-2 border-green-200 text-green-700 hover:bg-green-50">
+              <Filter className="h-4 w-4" />
+              Filters
             </Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredItems.map((item) => (
-              <Link key={item.id} href={`/item/${item.id}`} className="block">
-                <Card className="overflow-hidden hover:shadow-md transition">
-                  <div className="aspect-[4/3] relative">
-                    <img src={item.image} alt={item.title} className="object-cover w-full h-full" />
-                    <div className="absolute top-2 right-2 px-2 py-1 bg-white/90 rounded text-sm text-gray-600">
-                      {item.distance}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2">{item.title}</h3>
-                    <div className="flex items-center text-sm text-gray-600 mb-3">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {item.location}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {item.culturalTags.map((tag, index) => (
-                        <span key={index} className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="text-sm text-green-600">
-                      Expires in {item.expiresIn}
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
         </div>
-      </section>
 
-      {/* Recent Activities */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-semibold mb-8 text-gray-900">Recent Activities</h2>
-          <div className="max-w-2xl">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center p-4 bg-white rounded-lg mb-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-medium">
-                  {activity.user[0]}
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-gray-900">
-                    <span className="font-medium">{activity.user}</span> {activity.action} {activity.item}
-                  </p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Categories */}
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+          {categories.map((category) => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              onClick={() => setSelectedCategory(category)}
+              className={`whitespace-nowrap ${
+                selectedCategory === category 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : "border-green-200 text-green-700 hover:bg-green-50"
+              }`}
+            >
+              {category}
+            </Button>
+          ))}
         </div>
-      </section>
 
-      {/* Leaderboard Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <Link href="/leaderboard" className="block">
-            <Card className="p-6 bg-white border-2 border-green-100 hover:border-green-200 transition">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-50 rounded-full">
-                    <Trophy className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">Top Donators</h3>
-                    <p className="text-sm text-gray-600">See who's making the biggest impact in our community</p>
-                  </div>
-                </div>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
-                  View Leaderboard
-                </Button>
-              </div>
-            </Card>
-          </Link>
+        {/* Food Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredFoods.map((food) => (
+            <FoodCard key={food.id} food={food} />
+          ))}
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }

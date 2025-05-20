@@ -17,12 +17,12 @@ export default function SmartPantryPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex justify-between items-center px-6 py-8 bg-gradient-to-b from-green-50 to-white rounded-2xl">
+          <div className="space-y-2">
             <h1 className="text-3xl font-bold text-green-900">Smart Pantry</h1>
             <p className="text-green-700">Share food, reduce waste, build community</p>
           </div>
-          <Button className="gap-2 bg-green-600 hover:bg-green-700">
+          <Button className="gap-2 bg-green-600 hover:bg-green-700 text-white">
             <Plus className="h-4 w-4" />
             Add Item
           </Button>

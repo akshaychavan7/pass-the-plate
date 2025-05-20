@@ -1,7 +1,9 @@
 "use client"
 
-import { MapPin, Clock } from "lucide-react"
+import { MapPin, Clock, MessageCircle } from "lucide-react"
 import { useTheme } from "../context/theme-context"
+import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 interface FoodCardProps {
   item: {
@@ -15,59 +17,42 @@ interface FoodCardProps {
     isFree: boolean
     price?: string
     originalPrice?: string
+    donorId?: string
+    donorName?: string
   }
   onPress: () => void
 }
 
 const FoodCard = ({ item, onPress }: FoodCardProps) => {
-  const { colors } = useTheme()
+  const { theme } = useTheme()
+  const router = useRouter()
+
+  const handleChatPress = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent triggering the card's onPress
+    router.push(`/chat?recipientId=${item.donorId}&recipientName=${encodeURIComponent(item.donorName || "Donor")}`)
+  }
 
   return (
     <div
       onClick={onPress}
-      style={{
-        backgroundColor: colors.card,
-        borderRadius: "16px",
-        overflow: "hidden",
-        marginBottom: "16px",
-        cursor: "pointer",
-      }}
+      className={cn(
+        "rounded-2xl overflow-hidden mb-4 cursor-pointer",
+        theme === "dark" ? "bg-gray-800" : "bg-white shadow-sm"
+      )}
     >
-      <div style={{ position: "relative" }}>
+      <div className="relative">
         <img
           src={item.image}
           alt={item.title}
-          style={{
-            width: "100%",
-            height: "200px",
-            objectFit: "cover",
-          }}
+          className="w-full h-[200px] object-cover"
         />
         {!item.isFree && (
-          <div
-            style={{
-              position: "absolute",
-              top: "12px",
-              right: "12px",
-              backgroundColor: colors.background + "E6",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-            }}
-          >
-            <span style={{ color: colors.text, fontWeight: "bold" }}>
+          <div className="absolute top-3 right-3 bg-background/90 p-2 rounded-lg flex flex-col items-end">
+            <span className="font-bold text-foreground">
               {item.price}
             </span>
             {item.originalPrice && (
-              <span
-                style={{
-                  color: colors.text + "80",
-                  textDecoration: "line-through",
-                  fontSize: "0.875rem",
-                }}
-              >
+              <span className="text-foreground/50 line-through text-sm">
                 {item.originalPrice}
               </span>
             )}
@@ -75,64 +60,55 @@ const FoodCard = ({ item, onPress }: FoodCardProps) => {
         )}
       </div>
 
-      <div style={{ padding: "16px" }}>
-        <h3
-          style={{
-            fontSize: "18px",
-            fontWeight: "bold",
-            color: colors.text,
-            marginBottom: "8px",
-          }}
-        >
+      <div className="p-4">
+        <h3 className="text-lg font-bold text-foreground mb-2">
           {item.title}
         </h3>
-        <p
-          style={{
-            color: colors.text + "CC",
-            marginBottom: "12px",
-            fontSize: "14px",
-          }}
-        >
+        <p className="text-foreground/80 text-sm mb-3">
           {item.description}
         </p>
 
-        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+        <div className="flex gap-2 mb-3">
           {item.tags.map((tag) => (
             <span
               key={tag}
-              style={{
-                backgroundColor: colors.background,
-                color: colors.text,
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "12px",
-              }}
+              className={cn(
+                "px-2 py-1 rounded text-xs",
+                theme === "dark" ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700"
+              )}
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <MapPin size={16} stroke={colors.text + "80"} />
-            <span style={{ color: colors.text + "80", fontSize: "14px" }}>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-1">
+            <MapPin size={16} className="text-foreground/50" />
+            <span className="text-foreground/50 text-sm">
               {item.distance} km
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Clock size={16} stroke={colors.text + "80"} />
-            <span style={{ color: colors.text + "80", fontSize: "14px" }}>
+          <div className="flex items-center gap-1">
+            <Clock size={16} className="text-foreground/50" />
+            <span className="text-foreground/50 text-sm">
               {item.expiresIn}
             </span>
           </div>
         </div>
+
+        <button
+          onClick={handleChatPress}
+          className={cn(
+            "flex items-center gap-2 mt-3 p-2 rounded-lg w-full justify-center",
+            theme === "dark" 
+              ? "bg-primary/20 text-primary hover:bg-primary/30" 
+              : "bg-primary/10 text-primary hover:bg-primary/20"
+          )}
+        >
+          <MessageCircle size={16} />
+          <span>Chat with Donor</span>
+        </button>
       </div>
     </div>
   )

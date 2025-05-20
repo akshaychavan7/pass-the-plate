@@ -132,7 +132,7 @@ export const dummyPantryItems: PantryItem[] = [
     unit: 'containers',
     expiryDate: '2024-03-22',
     condition: 'expiring',
-    image: 'https://images.unsplash.com/photo-1488477181946-6428a848b919?w=500',
+    image: 'https://images.unsplash.com/photo-1488477304112-4944851de03d?w=500',
     description: 'Plain Greek yogurt, high in protein.',
     location: 'Refrigerator',
     isAvailable: true,
@@ -150,4 +150,52 @@ export const dummyPantryItems: PantryItem[] = [
     location: 'Refrigerator',
     isAvailable: true,
   },
-]; 
+];
+
+export const dummyFoods = [
+  {
+    id: "1",
+    name: "Organic Bananas",
+    description: "Fresh organic bananas, slightly ripe. Perfect for smoothies or baking.",
+    category: "Fruits",
+    quantity: "2 bunches",
+    expiryDate: "2024-03-20",
+    location: "San Francisco, CA",
+    donor: {
+      id: "1",
+      name: "John Doe",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John"
+    },
+    image: "/images/fruits.jpg"
+  },
+  {
+    id: "2",
+    name: "Fresh Bread",
+    description: "Artisanal sourdough bread, baked today. Still warm!",
+    category: "Bakery",
+    quantity: "1 loaf",
+    expiryDate: "2024-03-18",
+    location: "San Francisco, CA",
+    donor: {
+      id: "1",
+      name: "John Doe",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John"
+    },
+    image: "/images/bowl.jpg"
+  },
+  {
+    id: "3",
+    name: "Mixed Vegetables",
+    description: "Assorted fresh vegetables including carrots, broccoli, and bell peppers.",
+    category: "Vegetables",
+    quantity: "1 bag",
+    expiryDate: "2024-03-19",
+    location: "San Francisco, CA",
+    donor: {
+      id: "1",
+      name: "John Doe",
+      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John"
+    },
+    image: "/images/all vegetables.jpg"
+  }
+] 

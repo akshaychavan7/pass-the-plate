@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '../context/theme-context'
 import { NavigationProvider } from '../context/navigation-context'
-import TabBar from '../components/tab-bar'
+import { TabBarWrapper } from '../components/tab-bar-wrapper'
 import { Toaster } from '@/components/ui/toaster'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +43,7 @@ export default function RootLayout({
             <main className="relative flex min-h-screen flex-col pb-16">
               {children}
             </main>
-            <TabBar />
+            <TabBarWrapper />
             <Toaster />
           </NavigationProvider>
         </ThemeProvider>

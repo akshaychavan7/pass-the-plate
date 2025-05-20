@@ -1,11 +1,16 @@
 "use client"
 
-import { MapPin, Clock, Heart, MessageSquare, Share2 } from "lucide-react"
+import { MapPin, Clock, Heart, MessageCircle, Share2 } from "lucide-react"
 import { useTheme } from "../context/theme-context"
+import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 const FoodDetail = () => {
-  const { colors } = useTheme()
+  const { theme } = useTheme()
+  const router = useRouter()
+  
   const item = {
+    id: "1",
     title: "Homemade Pasta",
     description: "Fresh homemade pasta, enough for 4 people. Made today.",
     distance: "0.3",
@@ -13,72 +18,92 @@ const FoodDetail = () => {
     tags: ["Italian", "Vegetarian"],
     expiresIn: "2 days",
     isFree: true,
+    donorId: "123",
+    donorName: "John Doe"
+  }
+
+  const handleChatPress = () => {
+    router.push(`/chat?recipientId=${item.donorId}&recipientName=${encodeURIComponent(item.donorName)}`)
   }
 
   return (
-    <div style={{ height: "100vh", background: colors.background, overflowY: "auto" }}>
-      <img src={item.image} alt={item.title} style={{ width: "100%", height: "300px", objectFit: "cover" }} />
+    <div className={cn(
+      "min-h-screen",
+      theme === "dark" ? "bg-gray-900" : "bg-white"
+    )}>
+      <img 
+        src={item.image} 
+        alt={item.title} 
+        className="w-full h-[300px] object-cover" 
+      />
 
-      <div style={{ padding: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: "bold", color: colors.text, marginBottom: 8 }}>{item.title}</h1>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold text-foreground mb-2">{item.title}</h1>
 
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-          <MapPin stroke={colors.primary} width={16} height={16} />
-          <span style={{ marginLeft: 4, color: colors.text }}>{item.distance} miles away</span>
+        <div className="flex items-center mb-2">
+          <MapPin className="w-4 h-4 text-primary" />
+          <span className="ml-1 text-foreground">{item.distance} miles away</span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
-          <Clock stroke={colors.warning} width={16} height={16} />
-          <span style={{ marginLeft: 4, color: colors.warning }}>Expires in {item.expiresIn}</span>
+        <div className="flex items-center mb-4">
+          <Clock className="w-4 h-4 text-warning" />
+          <span className="ml-1 text-warning">Expires in {item.expiresIn}</span>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <div className="flex flex-wrap gap-2 mb-4">
           {item.tags.map((tag, index) => (
-            <div key={index} style={{ background: colors.primary + "20", padding: "4px 8px", borderRadius: 4 }}>
-              <span style={{ color: colors.primary }}>{tag}</span>
+            <div 
+              key={index} 
+              className={cn(
+                "px-2 py-1 rounded text-sm",
+                theme === "dark" 
+                  ? "bg-primary/20 text-primary" 
+                  : "bg-primary/10 text-primary"
+              )}
+            >
+              {tag}
             </div>
           ))}
         </div>
 
-        <p style={{ color: colors.text, marginBottom: 16 }}>{item.description}</p>
+        <p className="text-foreground mb-6">{item.description}</p>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
+        <div className="flex justify-between items-center">
           <button
-            style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              alignItems: "center",
-              color: colors.text,
-              cursor: "pointer",
-            }}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg",
+              theme === "dark" 
+                ? "bg-primary/20 text-primary hover:bg-primary/30" 
+                : "bg-primary/10 text-primary hover:bg-primary/20"
+            )}
+            onClick={handleChatPress}
           >
-            <Heart stroke={colors.text} width={20} height={20} />
+            <MessageCircle className="w-5 h-5" />
+            <span>Chat with Donor</span>
           </button>
-          <button
-            style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              alignItems: "center",
-              color: colors.text,
-              cursor: "pointer",
-            }}
-          >
-            <MessageSquare stroke={colors.text} width={20} height={20} />
-          </button>
-          <button
-            style={{
-              background: "none",
-              border: "none",
-              display: "flex",
-              alignItems: "center",
-              color: colors.text,
-              cursor: "pointer",
-            }}
-          >
-            <Share2 stroke={colors.text} width={20} height={20} />
-          </button>
+
+          <div className="flex gap-4">
+            <button
+              className={cn(
+                "p-2 rounded-full",
+                theme === "dark" 
+                  ? "text-foreground hover:bg-gray-800" 
+                  : "text-foreground hover:bg-gray-100"
+              )}
+            >
+              <Heart className="w-5 h-5" />
+            </button>
+            <button
+              className={cn(
+                "p-2 rounded-full",
+                theme === "dark" 
+                  ? "text-foreground hover:bg-gray-800" 
+                  : "text-foreground hover:bg-gray-100"
+              )}
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

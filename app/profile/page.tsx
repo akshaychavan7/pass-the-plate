@@ -1,4 +1,6 @@
-import { Metadata } from 'next'
+"use client"
+
+import { useState } from "react"
 import { dummyUsers } from '@/lib/data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -7,22 +9,42 @@ import { Button } from '@/components/ui/button'
 import { Settings, Share2, Heart, Award, Leaf, Users, Gift, Clock, Star, Calendar, MapPin, Mail } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-
-export const metadata: Metadata = {
-  title: 'Profile | Pass the Plate',
-  description: 'Manage your profile settings',
-}
+import Image from 'next/image'
 
 export default function ProfilePage() {
   const user = dummyUsers[0]
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Community Banner */}
+        <div className="relative h-48 rounded-xl overflow-hidden">
+          <Image
+            src="/images/karolina-kolodziejczak-1DNMBNQaQZE-unsplash.jpg"
+            alt="Community Banner"
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-green-900/70 to-transparent" />
+          <div className="absolute bottom-6 left-6 text-white">
+            <h2 className="text-2xl font-bold mb-2">Welcome to Our Community</h2>
+            <p className="text-sm opacity-90">Join us in making a difference through food sharing</p>
+          </div>
+        </div>
+
         {/* Profile Header */}
         <Card className="relative overflow-hidden border-green-200">
           <div className="absolute inset-0 bg-gradient-to-r from-green-50 to-emerald-50" />
-          <div className="absolute inset-0 bg-[url('/leaf-pattern.png')] opacity-5" />
+          <div className="absolute inset-0 opacity-10">
+            <Image
+              src="/images/fruits.jpg"
+              alt="Background pattern"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
           <CardHeader className="relative p-6">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="relative flex-shrink-0">
@@ -86,7 +108,7 @@ export default function ProfilePage() {
           </CardHeader>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border-green-100">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-900">
@@ -95,7 +117,19 @@ export default function ProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
+                <div className="relative h-32 mb-6 rounded-lg overflow-hidden">
+                  <Image
+                    src="/images/all vegetables.jpg"
+                    alt="Community impact"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-green-900/50 to-transparent" />
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <p className="text-sm font-medium">Making a difference in our community</p>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Gift className="h-5 w-5 text-green-600" />
@@ -136,8 +170,13 @@ export default function ProfilePage() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Gift className="h-4 w-4 text-green-600" />
+                  <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <Image
+                      src="/images/fruits salad.jpg"
+                      alt="Organic Bananas"
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-green-900">Shared Organic Bananas</p>
@@ -146,8 +185,13 @@ export default function ProfilePage() {
                 </div>
                 <Separator className="bg-green-100" />
                 <div className="flex items-start gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Users className="h-4 w-4 text-green-600" />
+                  <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <Image
+                      src="/images/bowl.jpg"
+                      alt="Fresh Bread"
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-green-900">Received Fresh Bread</p>
@@ -156,8 +200,13 @@ export default function ProfilePage() {
                 </div>
                 <Separator className="bg-green-100" />
                 <div className="flex items-start gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Star className="h-4 w-4 text-green-600" />
+                  <div className="relative h-12 w-12 rounded-lg overflow-hidden flex-shrink-0">
+                    <Image
+                      src="/images/plater.jpg"
+                      alt="Community Leader Badge"
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-green-900">Earned Community Leader Badge</p>

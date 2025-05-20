@@ -21,10 +21,13 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
-  basePath: '/pass-the-plate',
-  output: 'export',
-  distDir: 'out',
-  trailingSlash: true,
+  // Only use basePath and output: 'export' in production
+  ...(process.env.NODE_ENV === 'production' ? {
+    basePath: '/pass-the-plate',
+    output: 'export',
+    distDir: 'out',
+    trailingSlash: true,
+  } : {})
 }
 
 export default nextConfig
