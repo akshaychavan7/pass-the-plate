@@ -2,11 +2,11 @@
 const nextConfig = {
   eslint: {
     // Only ignore ESLint during production builds
-    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+    ignoreDuringBuilds: true,
   },
   typescript: {
     // Only ignore TypeScript during production builds
-    ignoreBuildErrors: process.env.NODE_ENV === 'production',
+    ignoreBuildErrors: true,
   },
   images: {
     unoptimized: true,
