@@ -42,6 +42,7 @@ jobs:
       
       - name: Build
         run: |
+          echo 'module.exports = { output: "export", basePath: "/pass-the-plate" }' > next.config.js
           pnpm run build || (echo "Build completed with warnings" && exit 0)
         env:
           NEXT_PUBLIC_BASE_PATH: '/pass-the-plate'
@@ -51,6 +52,11 @@ jobs:
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifact
           cp -r out/* $GITHUB_WORKSPACE/artifact/
+          # Ensure index.html exists
+          if [ ! -f "$GITHUB_WORKSPACE/artifact/index.html" ]; then
+            echo "Error: index.html not found in build output"
+            exit 1
+          fi
           echo "artifact_path=$GITHUB_WORKSPACE/artifact" >> $GITHUB_OUTPUT
 
   deploy:
