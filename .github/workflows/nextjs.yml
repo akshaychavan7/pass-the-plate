@@ -2,90 +2,60 @@
 #
 # To get started with Next.js see: https://nextjs.org/docs/getting-started
 #
-name: React Native CI/CD
+name: Deploy Next.js site to Pages
 
 on:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-android:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
+      
       - name: Install pnpm
         run: |
           sudo npm install -g pnpm
           pnpm --version
-
+      
       - name: Install dependencies
         run: pnpm install
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Build Android App
-        run: |
-          cd android
-          ./gradlew assembleRelease
+      
+      - name: Build with Next.js
+        run: pnpm run build
         env:
-          ANDROID_HOME: ${{ secrets.ANDROID_HOME }}
-          JAVA_HOME: ${{ secrets.JAVA_HOME }}
-
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
+          NEXT_PUBLIC_BASE_PATH: '/pass-the-plate'
+          NODE_ENV: 'production'
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: app-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: ./out
 
-  build-ios:
-    runs-on: macos-latest
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install pnpm
-        run: |
-          sudo npm install -g pnpm
-          pnpm --version
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Install iOS dependencies
-        run: |
-          cd ios
-          pod install
-
-      - name: Build iOS App
-        run: |
-          cd ios
-          xcodebuild -workspace PassThePlate.xcworkspace -scheme PassThePlate -configuration Release -sdk iphoneos build
-        env:
-          DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
-
-      - name: Upload iOS IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-ios
-          path: ios/build/Release-iphoneos/PassThePlate.ipa
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
