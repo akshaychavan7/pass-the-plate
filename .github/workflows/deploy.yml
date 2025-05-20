@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: ./.github/actions/checkout
       
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: ./.github/actions/setup-node
         with:
           node-version: '20'
           cache: 'npm'
@@ -37,12 +37,12 @@ jobs:
           NODE_ENV: 'production'
       
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: ./.github/actions/configure-pages
         with:
           static_site_generator: next
       
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: ./.github/actions/upload-pages-artifact
         with:
           path: out
 
@@ -55,4 +55,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 
+        uses: ./.github/actions/deploy-pages 

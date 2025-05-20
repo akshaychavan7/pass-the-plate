@@ -1,0 +1,15 @@
+name: 'Upload Pages Artifact'
+description: 'Upload GitHub Pages artifact'
+inputs:
+  path:
+    description: 'Path to upload'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Upload artifact
+      shell: bash
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/artifact
+        cp -r ${{ inputs.path }}/* $GITHUB_WORKSPACE/artifact/
+        echo "::set-output name=artifact_path::$GITHUB_WORKSPACE/artifact" 
