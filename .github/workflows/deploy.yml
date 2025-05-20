@@ -40,9 +40,23 @@ jobs:
           pnpm install
           pnpm add -D critters
       
+      - name: Configure Next.js
+        run: |
+          cat > next.config.js << 'EOL'
+          /** @type {import('next').NextConfig} */
+          const nextConfig = {
+            output: 'export',
+            basePath: '/pass-the-plate',
+            images: {
+              unoptimized: true,
+            },
+            trailingSlash: true,
+          }
+          module.exports = nextConfig
+          EOL
+      
       - name: Build
         run: |
-          echo 'module.exports = { output: "export", basePath: "/pass-the-plate" }' > next.config.js
           pnpm run build || (echo "Build completed with warnings" && exit 0)
         env:
           NEXT_PUBLIC_BASE_PATH: '/pass-the-plate'
@@ -75,6 +89,9 @@ jobs:
             echo "Creating index.html..."
             echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=/pass-the-plate' /></head></html>" > $GITHUB_WORKSPACE/artifact/index.html
           fi
+          
+          # Ensure all files have correct permissions
+          chmod -R 755 $GITHUB_WORKSPACE/artifact
           
           echo "Contents of artifact directory:"
           ls -la $GITHUB_WORKSPACE/artifact
