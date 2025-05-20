@@ -58,6 +58,7 @@ jobs:
               unoptimized: true,
             },
             trailingSlash: true,
+            distDir: 'out',
           }
           module.exports = nextConfig
           EOL
@@ -66,10 +67,21 @@ jobs:
         run: pnpm install
       
       - name: Build with Next.js
-        run: pnpm run build
+        run: |
+          pnpm run build
+          echo "Listing build output directory:"
+          ls -la out/
         env:
           NEXT_PUBLIC_BASE_PATH: '/pass-the-plate'
           NODE_ENV: 'production'
+      
+      - name: Verify build output
+        run: |
+          if [ ! -f "out/index.html" ]; then
+            echo "Error: index.html not found in build output"
+            exit 1
+          fi
+          echo "Build output verified successfully"
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

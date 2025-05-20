@@ -9,6 +9,7 @@ const nextConfig = {
     ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   images: {
+    unoptimized: true,
     domains: ['localhost'],
     remotePatterns: [
       {
@@ -20,12 +21,10 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  // Only enable static export for production builds
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'export',
-    distDir: 'out',
-  }),
+  basePath: '/pass-the-plate',
+  output: 'export',
+  distDir: 'out',
+  trailingSlash: true,
 }
 
 export default nextConfig
