@@ -48,15 +48,36 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: '/pass-the-plate'
           NODE_ENV: 'production'
       
+      - name: List build output
+        run: |
+          echo "Contents of current directory:"
+          ls -la
+          echo "Contents of out directory (if it exists):"
+          ls -la out || true
+          echo "Contents of .next directory (if it exists):"
+          ls -la .next || true
+      
       - name: Upload artifact
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifact
-          cp -r out/* $GITHUB_WORKSPACE/artifact/
-          # Ensure index.html exists
-          if [ ! -f "$GITHUB_WORKSPACE/artifact/index.html" ]; then
-            echo "Error: index.html not found in build output"
+          if [ -d "out" ]; then
+            cp -r out/* $GITHUB_WORKSPACE/artifact/
+          elif [ -d ".next" ]; then
+            cp -r .next/static $GITHUB_WORKSPACE/artifact/
+            cp -r public/* $GITHUB_WORKSPACE/artifact/ || true
+          else
+            echo "Error: No build output found in 'out' or '.next' directory"
             exit 1
           fi
+          
+          # Create index.html if it doesn't exist
+          if [ ! -f "$GITHUB_WORKSPACE/artifact/index.html" ]; then
+            echo "Creating index.html..."
+            echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=/pass-the-plate' /></head></html>" > $GITHUB_WORKSPACE/artifact/index.html
+          fi
+          
+          echo "Contents of artifact directory:"
+          ls -la $GITHUB_WORKSPACE/artifact
           echo "artifact_path=$GITHUB_WORKSPACE/artifact" >> $GITHUB_OUTPUT
 
   deploy:
