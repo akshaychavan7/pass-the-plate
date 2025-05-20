@@ -20,6 +20,9 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
   },
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  output: 'export',
+  distDir: 'out',
 }
 
 export default nextConfig

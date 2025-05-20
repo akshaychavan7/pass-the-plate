@@ -74,5 +74,21 @@
     "tailwindcss": "3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
-  }
+  },
+  "description": "A Next.js application for sharing food with your community.",
+  "main": "postcss.config.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshaychavan7/pass-the-plate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akshaychavan7/pass-the-plate/issues"
+  },
+  "homepage": "https://github.com/akshaychavan7/pass-the-plate#readme"
 }
