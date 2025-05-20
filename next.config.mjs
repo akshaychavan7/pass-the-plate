@@ -21,8 +21,11 @@ const nextConfig = {
     optimizeCss: true,
   },
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  output: 'export',
-  distDir: 'out',
+  // Only enable static export for production builds
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export',
+    distDir: 'out',
+  }),
 }
 
 export default nextConfig

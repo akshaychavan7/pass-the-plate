@@ -129,7 +129,7 @@ const Profile = () => {
             color: colors.text,
             margin: "0 0 4px 0"
           }}>
-            Sarah Johnson
+            Akshay Chavan
           </h2>
           <p style={{ 
             fontSize: "16px", 
