@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { MessageSquare } from 'lucide-react'
+import { BottomNav } from '@/components/BottomNav'
 
 const impactStats = [
   { label: 'Meals Shared', value: '15M+' },
@@ -1034,6 +1035,7 @@ export default function HomePage() {
           </div>
         )}
       </div>
+      <BottomNav />
     </div>
   )
 }
