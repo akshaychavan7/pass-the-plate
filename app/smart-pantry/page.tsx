@@ -1,4 +1,5 @@
-import { Metadata } from 'next'
+"use client"
+
 import { dummyPantryItems } from '@/lib/data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,13 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Search, Filter, Clock, MapPin, Leaf, Share2, Edit2 } from 'lucide-react'
-
-export const metadata: Metadata = {
-  title: 'Smart Pantry | Pass the Plate',
-  description: 'Manage your shared food items',
-}
+import { useRouter } from 'next/navigation'
 
 export default function SmartPantryPage() {
+  const router = useRouter()
+
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -22,7 +21,10 @@ export default function SmartPantryPage() {
             <h1 className="text-3xl font-bold text-green-900">Smart Pantry</h1>
             <p className="text-green-700">Share food, reduce waste, build community</p>
           </div>
-          <Button className="gap-2 bg-green-600 hover:bg-green-700 text-white">
+          <Button 
+            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => router.push('/add-food')}
+          >
             <Plus className="h-4 w-4" />
             Add Item
           </Button>

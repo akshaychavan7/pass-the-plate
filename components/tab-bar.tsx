@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 const tabs = [
   { label: "Home", icon: Home, path: "/" },
   { label: "Map", icon: Map, path: "/map-view" },
-  { label: "Add", icon: PlusCircle, path: "/add-food" },
   { label: "Chat", icon: MessageCircle, path: "/chat" },
   { label: "Pantry", icon: Package, path: "/smart-pantry" },
   { label: "Profile", icon: User, path: "/profile" },

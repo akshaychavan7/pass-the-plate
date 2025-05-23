@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Home, Map, Trophy, PlusCircle } from 'lucide-react'
+import { Home, Map, Trophy, PlusCircle, Leaf } from 'lucide-react'
 
 export function Nav() {
   const pathname = usePathname()
@@ -23,6 +23,11 @@ export function Nav() {
       href: '/leaderboard',
       label: 'Leaderboard',
       icon: Trophy
+    },
+    {
+      href: '/impact-calculator',
+      label: 'Impact',
+      icon: Leaf
     },
     {
       href: '/donate',

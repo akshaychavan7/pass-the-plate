@@ -5,6 +5,7 @@ export interface UserProfile {
   avatar: string;
   location: string;
   bio: string;
+  verified: boolean;
   stats: {
     itemsShared: number;
     itemsReceived: number;
@@ -38,6 +39,7 @@ export const dummyUsers: UserProfile[] = [
     avatar: '/akshay.jpeg',
     location: 'Boston, MA',
     bio: 'Passionate about reducing food waste and building community through food sharing.',
+    verified: true,
     stats: {
       itemsShared: 45,
       itemsReceived: 12,
@@ -55,6 +57,7 @@ export const dummyUsers: UserProfile[] = [
     avatar: 'https://i.pravatar.cc/150?img=2',
     location: 'San Francisco, CA',
     bio: 'Love cooking and sharing surplus ingredients with neighbors.',
+    verified: false,
     stats: {
       itemsShared: 28,
       itemsReceived: 15,
@@ -72,6 +75,7 @@ export const dummyUsers: UserProfile[] = [
     avatar: 'https://i.pravatar.cc/150?img=3',
     location: 'San Francisco, CA',
     bio: 'Food enthusiast and community organizer. Always happy to share!',
+    verified: true,
     stats: {
       itemsShared: 62,
       itemsReceived: 8,

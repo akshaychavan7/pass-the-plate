@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Upload, Tag } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { FoodImageAnalyzer } from '@/components/food-image-analyzer'
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -124,6 +125,25 @@ export function AddFoodForm() {
     } else {
       setValue(type, [...currentTags, tag])
     }
+  }
+
+  const handleAnalysisComplete = (analysis: any) => {
+    // Update form fields with analysis results
+    setValue('title', analysis.food_name)
+    setValue('description', `Nutritional Factors: ${analysis.nutritional_factors}\nHealth Considerations: ${analysis.health_considerations}\nBenefits: ${analysis.benefits}\nAdditional Info: ${analysis.additional_info}`)
+    
+    // Add relevant tags based on analysis
+    const tags = []
+    if (analysis.health_considerations.toLowerCase().includes('gluten')) {
+      tags.push('Gluten-Free')
+    }
+    if (analysis.health_considerations.toLowerCase().includes('dairy')) {
+      tags.push('Dairy-Free')
+    }
+    if (analysis.health_considerations.toLowerCase().includes('nuts')) {
+      tags.push('Nut-Free')
+    }
+    setValue('dietaryTags', tags)
   }
 
   return (
@@ -351,20 +371,9 @@ export function AddFoodForm() {
 
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Food Image
+          Food Image Analysis
         </label>
-        <div className="flex items-center justify-center w-full">
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Upload className="w-8 h-8 mb-2 text-gray-500" />
-              <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
-            </div>
-            <input type="file" className="hidden" accept="image/*" />
-          </label>
-        </div>
+        <FoodImageAnalyzer onAnalysisComplete={handleAnalysisComplete} />
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">

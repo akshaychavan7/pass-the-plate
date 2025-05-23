@@ -61,7 +61,27 @@ export default function ProfilePage() {
               <div className="space-y-3 flex-1 min-w-0">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="space-y-2">
-                    <CardTitle className="text-2xl md:text-3xl text-green-900">{user.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-2xl md:text-3xl text-green-900">{user.name}</CardTitle>
+                      {user.verified && (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4 mr-1"
+                          >
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                          </svg>
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline" className="border-green-200 text-green-700">
                         <Star className="h-3 w-3 mr-1" />

@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, MapPin, Plus, Search, Users, Clock, Leaf, Heart, Trophy } from 'lucide-react'
+import { Home, MapPin, Plus, Search, Users, Clock, Leaf, Heart, Trophy, Calculator } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -157,6 +157,35 @@ export default function HomePage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Impact Calculator Section */}
+        <div className="mb-16">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Leaf className="h-8 w-8 text-green-600" />
+              <h2 className="text-3xl font-bold text-green-800">Calculate Your Impact</h2>
+            </div>
+            <p className="text-lg text-green-600 max-w-2xl mx-auto">
+              Understand the environmental impact of your food sharing activities and make informed decisions to reduce your carbon footprint.
+            </p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <Card className="border-green-100 shadow-lg">
+              <div className="p-8 text-center">
+                <Calculator className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-green-800 mb-2">Environmental Impact Calculator</h3>
+                <p className="text-green-600 mb-6">
+                  Calculate carbon footprint, water usage, packaging waste, and food miles for your shared items.
+                </p>
+                <Link href="/impact-calculator">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg">
+                    Calculate Now
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </div>
+        </div>
+
         {/* Search and Filter Section */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1 relative">

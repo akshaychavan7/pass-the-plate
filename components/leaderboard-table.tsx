@@ -121,54 +121,82 @@ const dummyDonors: Donor[] = [
 
 export function LeaderboardTable() {
   return (
-    <Card className="p-4 md:p-6">
-      <div className="space-y-2">
-        {dummyDonors.map((donor) => (
-          <div
-            key={donor.id}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            {/* Rank */}
-            <div className="w-6 h-6 flex items-center justify-center shrink-0">
-              {donor.rank <= 3 ? (
-                <Trophy className={`w-5 h-5 ${
-                  donor.rank === 1 ? 'text-yellow-500' :
-                  donor.rank === 2 ? 'text-gray-400' :
-                  'text-amber-600'
-                }`} />
-              ) : (
-                <span className="text-gray-500 font-medium text-sm">{donor.rank}</span>
-              )}
-            </div>
-
-            {/* Avatar */}
-            <Avatar className="w-10 h-10 shrink-0">
-              <AvatarImage src={donor.avatar} alt={donor.name} />
-              <AvatarFallback>{donor.name.slice(0, 2)}</AvatarFallback>
-            </Avatar>
-
-            {/* Name and Stats */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold truncate">{donor.name}</h3>
-                <Badge variant="secondary" className="flex items-center gap-1 shrink-0">
-                  <Star className="w-3 h-3" />
-                  {donor.rating}
-                </Badge>
+    <Card className="relative overflow-hidden border-green-100 bg-white/80 backdrop-blur-sm">
+      <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-emerald-50" />
+      <div className="relative p-6">
+        <div className="space-y-4">
+          {dummyDonors.map((donor) => (
+            <div
+              key={donor.id}
+              className="group flex items-center gap-4 p-4 rounded-xl hover:bg-white/80 transition-all duration-300 border border-transparent hover:border-green-100 hover:shadow-sm"
+            >
+              {/* Rank */}
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                {donor.rank <= 3 ? (
+                  <div className="relative">
+                    <Trophy className={`w-6 h-6 ${
+                      donor.rank === 1 ? 'text-yellow-500' :
+                      donor.rank === 2 ? 'text-gray-400' :
+                      'text-amber-600'
+                    }`} />
+                    {donor.rank === 1 && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse" />
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-500 font-medium text-sm group-hover:text-green-600 transition-colors">
+                    {donor.rank}
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
-                <span className="shrink-0">{donor.donations} donations</span>
-                <span className="shrink-0">•</span>
-                <span className="shrink-0">{donor.itemsDonated} items</span>
-                <span className="shrink-0">•</span>
-                <span className="flex items-center gap-1 shrink-0">
-                  <TrendingUp className="w-3 h-3" />
-                  {donor.streak} day streak
-                </span>
+
+              {/* Avatar */}
+              <Avatar className="w-12 h-12 shrink-0 ring-2 ring-green-100 group-hover:ring-green-200 transition-all duration-300">
+                <AvatarImage src={donor.avatar} alt={donor.name} />
+                <AvatarFallback className="bg-green-100 text-green-800">
+                  {donor.name.slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+
+              {/* Name and Stats */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-green-900 truncate group-hover:text-green-700 transition-colors">
+                    {donor.name}
+                  </h3>
+                  <Badge variant="secondary" className="flex items-center gap-1 shrink-0 bg-green-100 text-green-800 hover:bg-green-200">
+                    <Star className="w-3 h-3" />
+                    {donor.rating}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-green-600 flex-wrap mt-1">
+                  <span className="shrink-0 flex items-center gap-1">
+                    <span className="font-medium">{donor.donations}</span> donations
+                  </span>
+                  <span className="shrink-0 text-green-300">•</span>
+                  <span className="shrink-0 flex items-center gap-1">
+                    <span className="font-medium">{donor.itemsDonated}</span> items
+                  </span>
+                  <span className="shrink-0 text-green-300">•</span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <TrendingUp className="w-3 h-3" />
+                    <span className="font-medium">{donor.streak}</span> day streak
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="hidden md:block w-32 shrink-0">
+                <div className="h-2 bg-green-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${(donor.donations / dummyDonors[0].donations) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </Card>
   )
