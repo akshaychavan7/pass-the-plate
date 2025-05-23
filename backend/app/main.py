@@ -91,13 +91,16 @@ async def analyze_food_image(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
         
         # Prepare the prompt for Gemini
-        prompt = """Analyze this food image and provide the following information in a structured format:
-        1. What is the food item?
-        2. How long can it be refrigerated?
-        3. What are the nutritional factors?
-        4. Which type of people should avoid it?
-        5. What is it good for?
-        Please provide detailed and accurate information."""
+        prompt = """Analyze this food image and provide the following information in a structured format. For each section, provide a clear, concise answer without bullet points or markdown formatting:
+
+        1. Food Name: What is the food item? (Provide just the name)
+        2. Refrigeration Time: How long can it be refrigerated? (Provide a clear time period)
+        3. Nutritional Factors: What are the key nutritional components? (List main nutrients)
+        4. Health Considerations: Who should avoid or limit this food? (List specific groups)
+        5. Benefits: What are the main health benefits? (List key benefits)
+        6. Additional Info: Any other important information about storage, preparation, or consumption?
+
+        Please provide clear, concise answers without bullet points, markdown, or excessive formatting."""
 
         # Generate response from Gemini
         try:
@@ -123,52 +126,65 @@ async def analyze_food_image(file: UploadFile = File(...)):
                 ]
             )
             logger.debug("Received response from Gemini API")
+            
+            # Parse the response and structure it
+            response_text = response.text
+            logger.debug(f"Raw response from Gemini: {response_text}")
+            
+            # Basic parsing of the response
+            lines = response_text.split('\n')
+            analysis = {
+                "food_name": "",
+                "refrigeration_time": "",
+                "nutritional_factors": "",
+                "health_considerations": "",
+                "benefits": "",
+                "additional_info": ""
+            }
+            
+            current_section = None
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                if "1. Food Name:" in line:
+                    current_section = "food_name"
+                    analysis["food_name"] = line.split("1. Food Name:")[-1].strip()
+                elif "2. Refrigeration Time:" in line:
+                    current_section = "refrigeration_time"
+                    analysis["refrigeration_time"] = line.split("2. Refrigeration Time:")[-1].strip()
+                elif "3. Nutritional Factors:" in line:
+                    current_section = "nutritional_factors"
+                    analysis["nutritional_factors"] = line.split("3. Nutritional Factors:")[-1].strip()
+                elif "4. Health Considerations:" in line:
+                    current_section = "health_considerations"
+                    analysis["health_considerations"] = line.split("4. Health Considerations:")[-1].strip()
+                elif "5. Benefits:" in line:
+                    current_section = "benefits"
+                    analysis["benefits"] = line.split("5. Benefits:")[-1].strip()
+                elif "6. Additional Info:" in line:
+                    current_section = "additional_info"
+                    analysis["additional_info"] = line.split("6. Additional Info:")[-1].strip()
+                elif current_section:
+                    analysis[current_section] += " " + line
+
+            # Clean up the responses
+            for key in analysis:
+                # Remove any remaining markdown or bullet points
+                analysis[key] = analysis[key].replace('*', '').replace('-', '').strip()
+                # Remove multiple spaces
+                analysis[key] = ' '.join(analysis[key].split())
+                # Remove any remaining section numbers
+                analysis[key] = analysis[key].replace('1.', '').replace('2.', '').replace('3.', '').replace('4.', '').replace('5.', '').replace('6.', '').strip()
+
+            logger.debug(f"Processed analysis: {analysis}")
+            return FoodAnalysis(**analysis)
+
         except Exception as e:
             logger.error(f"Error from Gemini API: {str(e)}")
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=f"Error from Gemini API: {str(e)}")
-        
-        # Parse the response and structure it
-        response_text = response.text
-        logger.debug(f"Raw response from Gemini: {response_text}")
-        
-        # Basic parsing of the response
-        lines = response_text.split('\n')
-        analysis = {
-            "food_name": "",
-            "refrigeration_time": "",
-            "nutritional_factors": "",
-            "health_considerations": "",
-            "benefits": "",
-            "additional_info": ""
-        }
-        
-        current_section = None
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-                
-            if "1." in line:
-                current_section = "food_name"
-                analysis["food_name"] = line.split("1.")[-1].strip()
-            elif "2." in line:
-                current_section = "refrigeration_time"
-                analysis["refrigeration_time"] = line.split("2.")[-1].strip()
-            elif "3." in line:
-                current_section = "nutritional_factors"
-                analysis["nutritional_factors"] = line.split("3.")[-1].strip()
-            elif "4." in line:
-                current_section = "health_considerations"
-                analysis["health_considerations"] = line.split("4.")[-1].strip()
-            elif "5." in line:
-                current_section = "benefits"
-                analysis["benefits"] = line.split("5.")[-1].strip()
-            elif current_section:
-                analysis[current_section] += " " + line
-
-        logger.debug(f"Processed analysis: {analysis}")
-        return FoodAnalysis(**analysis)
 
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")

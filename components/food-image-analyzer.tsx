@@ -22,11 +22,15 @@ interface FoodImageAnalyzerProps {
 export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [analysis, setAnalysis] = useState<FoodAnalysis | null>(null)
   const { toast } = useToast()
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    // Reset previous analysis
+    setAnalysis(null)
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
@@ -99,6 +103,7 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
       }
 
       const analysis = await response.json()
+      setAnalysis(analysis)
       onAnalysisComplete(analysis)
       toast({
         title: 'Analysis Complete',
@@ -148,6 +153,43 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
             fill
             className="object-cover"
           />
+        </div>
+      )}
+
+      {analysis && (
+        <div className="mt-6 space-y-4">
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-2">{analysis.food_name}</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-medium text-gray-700">Storage</h4>
+                <p className="text-gray-600">{analysis.refrigeration_time}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-700">Nutrition</h4>
+                <p className="text-gray-600">{analysis.nutritional_factors}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-700">Health Considerations</h4>
+                <p className="text-gray-600">{analysis.health_considerations}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-700">Benefits</h4>
+                <p className="text-gray-600">{analysis.benefits}</p>
+              </div>
+              
+              {analysis.additional_info && (
+                <div>
+                  <h4 className="font-medium text-gray-700">Additional Information</h4>
+                  <p className="text-gray-600">{analysis.additional_info}</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
