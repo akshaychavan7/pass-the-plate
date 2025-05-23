@@ -61,40 +61,17 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Image */}
-      <div className="relative h-64">
-        <Image
-          src={event.image}
-          alt={event.title}
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-        <div className="absolute top-4 left-4">
+      {/* Header with back button */}
+      <div className="sticky top-0 z-10 bg-background border-b">
+        <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="text-white hover:text-white hover:bg-white/20"
+            className="hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            Back to Events
           </Button>
-        </div>
-        <div className="absolute bottom-4 left-4 right-4">
-          <Badge className="bg-white/90 text-gray-900 mb-2">
-            {event.type}
-          </Badge>
-          <h1 className="text-2xl font-bold text-white mb-2">{event.title}</h1>
-          <div className="flex items-center gap-3 text-white/90 text-sm">
-            <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
-              <Calendar className="w-4 h-4" />
-              {format(new Date(event.startDate), 'MMM d, yyyy')}
-            </div>
-            <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
-              <Clock className="w-4 h-4" />
-              {format(new Date(event.startDate), 'h:mm a')}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -102,7 +79,21 @@ export default function EventDetailsPage({ params }: { params: { id: string } })
       <div className="container mx-auto px-4 py-6">
         <Card className="mb-6">
           <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge className="bg-green-600 text-white">
+                {event.type}
+              </Badge>
+              <Badge variant="outline" className="text-muted-foreground">
+                <Calendar className="w-3 h-3 mr-1" />
+                {format(new Date(event.startDate), 'MMM d, yyyy')}
+              </Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-4">{event.title}</h1>
             <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                {format(new Date(event.startDate), 'h:mm a')}
+              </div>
               <div className="flex items-center gap-1 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
                 {event.location}
