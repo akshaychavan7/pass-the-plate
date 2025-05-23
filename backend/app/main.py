@@ -4,12 +4,14 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict
 import logging
 import traceback
 from PIL import Image
 import io
 import base64
+import hashlib
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG level
@@ -33,6 +35,44 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini API: {str(e)}")
     raise
 
+# Cache configuration
+class CacheEntry:
+    def __init__(self, data: dict, timestamp: datetime):
+        self.data = data
+        self.timestamp = timestamp
+
+# In-memory cache with expiration
+class ImageAnalysisCache:
+    def __init__(self, expiration_hours: int = 24):
+        self.cache: Dict[str, CacheEntry] = {}
+        self.expiration_hours = expiration_hours
+
+    def get(self, key: str) -> Optional[dict]:
+        if key not in self.cache:
+            return None
+        
+        entry = self.cache[key]
+        if datetime.now() - entry.timestamp > timedelta(hours=self.expiration_hours):
+            del self.cache[key]
+            return None
+        
+        return entry.data
+
+    def set(self, key: str, data: dict):
+        self.cache[key] = CacheEntry(data, datetime.now())
+
+    def clear_expired(self):
+        now = datetime.now()
+        expired_keys = [
+            key for key, entry in self.cache.items()
+            if now - entry.timestamp > timedelta(hours=self.expiration_hours)
+        ]
+        for key in expired_keys:
+            del self.cache[key]
+
+# Initialize cache
+image_cache = ImageAnalysisCache()
+
 app = FastAPI()
 
 # Configure CORS
@@ -52,6 +92,10 @@ class FoodAnalysis(BaseModel):
     benefits: Optional[str]
     additional_info: Optional[str]
 
+def calculate_image_hash(image_data: bytes) -> str:
+    """Calculate a hash of the image data for caching."""
+    return hashlib.sha256(image_data).hexdigest()
+
 @app.post("/analyze-food-image/", response_model=FoodAnalysis)
 async def analyze_food_image(file: UploadFile = File(...)):
     try:
@@ -64,6 +108,15 @@ async def analyze_food_image(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="No image data received")
         
         logger.debug(f"Image size: {len(image_data)} bytes")
+        
+        # Calculate image hash for caching
+        image_hash = calculate_image_hash(image_data)
+        
+        # Check cache first
+        cached_result = image_cache.get(image_hash)
+        if cached_result:
+            logger.debug("Returning cached result")
+            return FoodAnalysis(**cached_result)
         
         # Validate image size
         if len(image_data) < 100:  # Arbitrary minimum size to ensure we have actual image data
@@ -178,6 +231,9 @@ async def analyze_food_image(file: UploadFile = File(...)):
                 # Remove any remaining section numbers
                 analysis[key] = analysis[key].replace('1.', '').replace('2.', '').replace('3.', '').replace('4.', '').replace('5.', '').replace('6.', '').strip()
 
+            # Cache the result
+            image_cache.set(image_hash, analysis)
+            
             logger.debug(f"Processed analysis: {analysis}")
             return FoodAnalysis(**analysis)
 
