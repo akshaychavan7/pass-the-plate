@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { FoodItem, FoodCategory, PackagingType, ImpactCalculationResult } from '../types/environmental-impact'
+import { FoodItem, FoodCategory, PackagingType, ImpactCalculationResult, Unit } from '../types/environmental-impact'
 import { calculateEnvironmentalImpact } from '../lib/environmental-calculator'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
@@ -15,19 +15,22 @@ export function EnvironmentalImpactCalculator() {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [currentItem, setCurrentItem] = useState<FoodItem>({
     name: '',
-    weight: 0,
+    quantity: 0,
+    unit: Unit.KG,
     category: FoodCategory.PRODUCE,
     packaging: PackagingType.NONE,
     isLocal: false,
   })
   const [results, setResults] = useState<ImpactCalculationResult | null>(null)
+  const [isCalculating, setIsCalculating] = useState(false)
 
   const handleAddItem = () => {
-    if (currentItem.name && currentItem.weight > 0) {
+    if (currentItem.name && currentItem.quantity > 0) {
       setFoodItems([...foodItems, currentItem])
       setCurrentItem({
         name: '',
-        weight: 0,
+        quantity: 0,
+        unit: Unit.KG,
         category: FoodCategory.PRODUCE,
         packaging: PackagingType.NONE,
         isLocal: false,
@@ -40,10 +43,17 @@ export function EnvironmentalImpactCalculator() {
     setResults(null)
   }
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
     if (foodItems.length > 0) {
-      const impact = calculateEnvironmentalImpact(foodItems)
-      setResults(impact)
+      setIsCalculating(true)
+      try {
+        const impact = await calculateEnvironmentalImpact(foodItems)
+        setResults(impact)
+      } catch (error) {
+        console.error('Error calculating impact:', error)
+      } finally {
+        setIsCalculating(false)
+      }
     }
   }
 
@@ -83,18 +93,38 @@ export function EnvironmentalImpactCalculator() {
                   className="h-11 border-green-200 focus:border-green-500 focus:ring-green-500"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="weight" className="text-base text-green-800 font-medium">Weight (kg)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={currentItem.weight}
-                  onChange={(e) => setCurrentItem({ ...currentItem, weight: parseFloat(e.target.value) })}
-                  placeholder="e.g., 2.5"
-                  className="h-11 border-green-200 focus:border-green-500 focus:ring-green-500"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity" className="text-base text-green-800 font-medium">Quantity</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={currentItem.quantity}
+                    onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseFloat(e.target.value) })}
+                    placeholder="e.g., 2.5"
+                    className="h-11 border-green-200 focus:border-green-500 focus:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-base text-green-800 font-medium">Unit</Label>
+                  <Select
+                    value={currentItem.unit}
+                    onValueChange={(value) => setCurrentItem({ ...currentItem, unit: value as Unit })}
+                  >
+                    <SelectTrigger className="h-11 border-green-200 focus:border-green-500 focus:ring-green-500">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(Unit).map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -159,11 +189,11 @@ export function EnvironmentalImpactCalculator() {
               </Button>
               <Button 
                 onClick={handleCalculate} 
-                disabled={foodItems.length === 0}
+                disabled={foodItems.length === 0 || isCalculating}
                 className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-base font-medium"
               >
                 <Calculator className="mr-2 h-5 w-5" />
-                Calculate Impact
+                {isCalculating ? 'Calculating...' : 'Calculate Impact'}
               </Button>
             </div>
           </div>
@@ -188,7 +218,7 @@ export function EnvironmentalImpactCalculator() {
                   <div className="space-y-1">
                     <p className="font-medium text-green-800">{item.name}</p>
                     <p className="text-sm text-green-600">
-                      {item.weight}kg • {item.category} • {item.packaging} • {item.isLocal ? 'Local' : 'Non-local'}
+                      {item.quantity} {item.unit} • {item.category} • {item.packaging} • {item.isLocal ? 'Local' : 'Non-local'}
                     </p>
                   </div>
                   <Button

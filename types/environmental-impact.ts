@@ -1,6 +1,17 @@
+export enum Unit {
+  KG = 'kg',
+  G = 'g',
+  LB = 'lb',
+  OZ = 'oz',
+  L = 'l',
+  ML = 'ml',
+  PCS = 'pcs'
+}
+
 export interface FoodItem {
   name: string;
-  weight: number; // in kg
+  quantity: number;
+  unit: Unit;
   category: FoodCategory;
   packaging: PackagingType;
   isLocal: boolean;

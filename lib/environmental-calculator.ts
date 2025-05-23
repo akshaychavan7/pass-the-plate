@@ -1,4 +1,15 @@
-import { FoodItem, EnvironmentalImpact, ImpactCalculationResult, FoodCategory, PackagingType } from '../types/environmental-impact';
+import { FoodItem, EnvironmentalImpact, ImpactCalculationResult, FoodCategory, PackagingType, Unit } from '../types/environmental-impact';
+
+// Unit conversion factors to kg
+const UNIT_CONVERSIONS = {
+  [Unit.KG]: 1,
+  [Unit.G]: 0.001,
+  [Unit.LB]: 0.453592,
+  [Unit.OZ]: 0.0283495,
+  [Unit.L]: 1, // 1 liter of water = 1 kg
+  [Unit.ML]: 0.001,
+  [Unit.PCS]: 0.1, // Assuming average piece weight of 100g
+};
 
 // Constants for impact calculations
 const CARBON_FACTORS = {
@@ -25,7 +36,56 @@ const PACKAGING_IMPACT = {
   [PackagingType.NONE]: 0
 };
 
-export function calculateEnvironmentalImpact(foodItems: FoodItem[]): ImpactCalculationResult {
+// Convert quantity to kg based on unit
+function convertToKg(quantity: number, unit: Unit): number {
+  return quantity * UNIT_CONVERSIONS[unit];
+}
+
+// Get Gemini API recommendations
+async function getGeminiRecommendations(foodItems: FoodItem[], totalImpact: EnvironmentalImpact): Promise<string[]> {
+  try {
+    const response = await fetch('http://localhost:8000/api/environmental-impact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        foodItems,
+        totalImpact,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to get recommendations');
+    }
+
+    const data = await response.json();
+    return data.recommendations;
+  } catch (error) {
+    console.error('Error getting Gemini recommendations:', error);
+    return generateDefaultRecommendations(totalImpact);
+  }
+}
+
+// Default recommendations if Gemini API fails
+function generateDefaultRecommendations(totalImpact: EnvironmentalImpact): string[] {
+  const recommendations: string[] = [];
+
+  if (totalImpact.carbonFootprint > 100) {
+    recommendations.push("Consider reducing meat and dairy consumption to lower carbon footprint");
+  }
+  if (totalImpact.waterUsage > 10000) {
+    recommendations.push("Try to include more water-efficient food items in your sharing");
+  }
+  if (totalImpact.foodMiles > 1000) {
+    recommendations.push("Try to source more local ingredients to reduce food miles");
+  }
+
+  return recommendations;
+}
+
+export async function calculateEnvironmentalImpact(foodItems: FoodItem[]): Promise<ImpactCalculationResult> {
   const totalImpact: EnvironmentalImpact = {
     carbonFootprint: 0,
     waterUsage: 0,
@@ -50,10 +110,13 @@ export function calculateEnvironmentalImpact(foodItems: FoodItem[]): ImpactCalcu
   };
 
   foodItems.forEach(item => {
+    // Convert quantity to kg for calculations
+    const weightInKg = convertToKg(item.quantity, item.unit);
+
     // Calculate impacts
-    const carbonImpact = item.weight * CARBON_FACTORS[item.category];
-    const waterImpact = item.weight * WATER_FACTORS[item.category];
-    const packagingImpact = item.weight * PACKAGING_IMPACT[item.packaging];
+    const carbonImpact = weightInKg * CARBON_FACTORS[item.category];
+    const waterImpact = weightInKg * WATER_FACTORS[item.category];
+    const packagingImpact = weightInKg * PACKAGING_IMPACT[item.packaging];
     const foodMiles = item.isLocal ? 50 : 1500; // Simplified calculation
 
     // Update total impact
@@ -75,8 +138,8 @@ export function calculateEnvironmentalImpact(foodItems: FoodItem[]): ImpactCalcu
     packagingBreakdown[item.packaging].foodMiles += foodMiles;
   });
 
-  // Generate recommendations
-  const recommendations = generateRecommendations(totalImpact, categoryBreakdown, packagingBreakdown);
+  // Get recommendations from Gemini API
+  const recommendations = await getGeminiRecommendations(foodItems, totalImpact);
 
   return {
     totalImpact,
@@ -86,34 +149,4 @@ export function calculateEnvironmentalImpact(foodItems: FoodItem[]): ImpactCalcu
     },
     recommendations
   };
-}
-
-function generateRecommendations(
-  totalImpact: EnvironmentalImpact,
-  categoryBreakdown: Record<FoodCategory, EnvironmentalImpact>,
-  packagingBreakdown: Record<PackagingType, EnvironmentalImpact>
-): string[] {
-  const recommendations: string[] = [];
-
-  // Carbon footprint recommendations
-  if (totalImpact.carbonFootprint > 100) {
-    recommendations.push("Consider reducing meat and dairy consumption to lower carbon footprint");
-  }
-
-  // Water usage recommendations
-  if (totalImpact.waterUsage > 10000) {
-    recommendations.push("Try to include more water-efficient food items in your sharing");
-  }
-
-  // Packaging recommendations
-  if (packagingBreakdown[PackagingType.PLASTIC].packagingWaste > 5) {
-    recommendations.push("Consider using less plastic packaging and opt for reusable containers");
-  }
-
-  // Food miles recommendations
-  if (totalImpact.foodMiles > 1000) {
-    recommendations.push("Try to source more local ingredients to reduce food miles");
-  }
-
-  return recommendations;
 } 

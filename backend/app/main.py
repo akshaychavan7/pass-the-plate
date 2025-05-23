@@ -4,7 +4,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import logging
 import traceback
 from PIL import Image
@@ -12,6 +12,7 @@ import io
 import base64
 import hashlib
 from datetime import datetime, timedelta
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG level
@@ -42,7 +43,7 @@ class CacheEntry:
         self.timestamp = timestamp
 
 # In-memory cache with expiration
-class ImageAnalysisCache:
+class Cache:
     def __init__(self, expiration_hours: int = 24):
         self.cache: Dict[str, CacheEntry] = {}
         self.expiration_hours = expiration_hours
@@ -70,8 +71,9 @@ class ImageAnalysisCache:
         for key in expired_keys:
             del self.cache[key]
 
-# Initialize cache
-image_cache = ImageAnalysisCache()
+# Initialize caches
+image_cache = Cache()
+environmental_cache = Cache()
 
 app = FastAPI()
 
@@ -92,9 +94,37 @@ class FoodAnalysis(BaseModel):
     benefits: Optional[str]
     additional_info: Optional[str]
 
+class FoodItem(BaseModel):
+    name: str
+    quantity: float
+    unit: str
+    category: str
+    packaging: str
+    isLocal: bool
+
+class EnvironmentalImpact(BaseModel):
+    carbonFootprint: float
+    waterUsage: float
+    packagingWaste: float
+    foodMiles: float
+
+class EnvironmentalImpactRequest(BaseModel):
+    foodItems: List[FoodItem]
+    totalImpact: EnvironmentalImpact
+
 def calculate_image_hash(image_data: bytes) -> str:
     """Calculate a hash of the image data for caching."""
     return hashlib.sha256(image_data).hexdigest()
+
+def calculate_cache_key(food_items: List[FoodItem], total_impact: EnvironmentalImpact) -> str:
+    """Calculate a unique cache key for environmental impact recommendations."""
+    # Create a string representation of the input data
+    data_str = json.dumps({
+        "food_items": [item.dict() for item in food_items],
+        "total_impact": total_impact.dict()
+    }, sort_keys=True)
+    # Create a hash of the string
+    return hashlib.sha256(data_str.encode()).hexdigest()
 
 @app.post("/analyze-food-image/", response_model=FoodAnalysis)
 async def analyze_food_image(file: UploadFile = File(...)):
@@ -245,6 +275,95 @@ async def analyze_food_image(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/environmental-impact")
+async def get_environmental_recommendations(request: EnvironmentalImpactRequest):
+    try:
+        # Calculate cache key
+        cache_key = calculate_cache_key(request.foodItems, request.totalImpact)
+        logger.debug(f"Cache key for environmental impact: {cache_key}")
+        
+        # Check cache first
+        cached_result = environmental_cache.get(cache_key)
+        if cached_result:
+            logger.debug("Returning cached environmental impact recommendations")
+            return cached_result
+
+        logger.debug("Cache miss, calling Gemini API")
+
+        # Prepare prompt for Gemini
+        prompt = f"""Given the following food items and their environmental impact:
+{request.foodItems}
+
+Total Environmental Impact:
+{request.totalImpact}
+
+Please provide 3-5 specific, actionable recommendations to reduce the environmental impact of these food items. Consider:
+1. Food choices and alternatives
+2. Packaging options
+3. Transportation and sourcing
+4. Storage and preservation
+5. Waste reduction
+
+IMPORTANT: Format your response as a Python list of strings, with each recommendation as a separate string. For example:
+[
+    "Consider buying local produce to reduce food miles",
+    "Choose products with minimal packaging",
+    "Store food properly to reduce waste"
+]"""
+
+        # Generate content using Gemini
+        response = model.generate_content(prompt)
+        
+        if not response.text:
+            raise HTTPException(status_code=500, detail="No response from Gemini API")
+
+        # Parse the response
+        try:
+            # Clean up the response text
+            response_text = response.text.strip()
+            
+            # If the response starts with ```python and ends with ```, remove them
+            if response_text.startswith("```python"):
+                response_text = response_text[9:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            
+            # Remove any leading/trailing whitespace
+            response_text = response_text.strip()
+            
+            # Try to parse as Python list
+            recommendations = eval(response_text)
+            
+            # Validate that it's a list of strings
+            if not isinstance(recommendations, list):
+                raise ValueError("Response is not a list")
+            
+            if not all(isinstance(rec, str) for rec in recommendations):
+                raise ValueError("Response contains non-string items")
+            
+            # Limit to 5 recommendations
+            recommendations = recommendations[:5]
+            
+            result = {"recommendations": recommendations}
+            
+            # Cache the result
+            logger.debug("Caching environmental impact recommendations")
+            environmental_cache.set(cache_key, result)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to parse Gemini response: {str(e)}")
+            logger.error(f"Raw response: {response.text}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to parse Gemini response: {str(e)}. Raw response: {response.text}"
+            )
+
+    except Exception as e:
+        logger.error(f"Error in environmental impact API: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
