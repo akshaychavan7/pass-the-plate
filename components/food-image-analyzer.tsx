@@ -28,6 +28,26 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'File size must be less than 5MB',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      })
+      return
+    }
+
     // Preview the image
     const reader = new FileReader()
     reader.onloadend = () => {
@@ -38,7 +58,34 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
     // Analyze the image
     setIsAnalyzing(true)
     const formData = new FormData()
-    formData.append('file', file)
+    
+    // Convert image to JPEG if needed
+    try {
+      const image = await createImageBitmap(file)
+      const canvas = document.createElement('canvas')
+      canvas.width = image.width
+      canvas.height = image.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Could not get canvas context')
+      
+      ctx.drawImage(image, 0, 0)
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+          else throw new Error('Could not convert image to blob')
+        }, 'image/jpeg', 0.9)
+      })
+      
+      formData.append('file', blob, 'image.jpg')
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to process image. Please try again.',
+        variant: 'destructive',
+      })
+      setIsAnalyzing(false)
+      return
+    }
 
     try {
       const response = await fetch('http://localhost:8000/analyze-food-image/', {
@@ -47,7 +94,8 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
       })
 
       if (!response.ok) {
-        throw new Error('Failed to analyze image')
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to analyze image')
       }
 
       const analysis = await response.json()
@@ -59,7 +107,7 @@ export function FoodImageAnalyzer({ onAnalysisComplete }: FoodImageAnalyzerProps
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to analyze image. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to analyze image. Please try again.',
         variant: 'destructive',
       })
     } finally {

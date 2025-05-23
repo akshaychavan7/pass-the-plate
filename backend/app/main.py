@@ -9,6 +9,7 @@ import logging
 import traceback
 from PIL import Image
 import io
+import base64
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG level
@@ -26,7 +27,7 @@ if not api_key:
 
 try:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-pro-latest')
+    model = genai.GenerativeModel('gemini-2.5-pro-preview-05-06')
     logger.info("Successfully configured Gemini API")
 except Exception as e:
     logger.error(f"Failed to configure Gemini API: {str(e)}")
@@ -64,13 +65,30 @@ async def analyze_food_image(file: UploadFile = File(...)):
         
         logger.debug(f"Image size: {len(image_data)} bytes")
         
+        # Validate image size
+        if len(image_data) < 100:  # Arbitrary minimum size to ensure we have actual image data
+            logger.error(f"Image data too small: {len(image_data)} bytes")
+            raise HTTPException(status_code=400, detail="Invalid image: Image data too small")
+        
         # Convert bytes to PIL Image
         try:
             image = Image.open(io.BytesIO(image_data))
+            # Validate image format
+            if image.format not in ['JPEG', 'PNG']:
+                logger.error(f"Unsupported image format: {image.format}")
+                raise HTTPException(status_code=400, detail=f"Unsupported image format: {image.format}. Please use JPEG or PNG.")
+            
+            # Convert to JPEG if needed
+            if image.format != 'JPEG':
+                output = io.BytesIO()
+                image = image.convert('RGB')
+                image.save(output, format='JPEG', quality=90)
+                image_data = output.getvalue()
+            
             logger.debug("Successfully converted image data to PIL Image")
         except Exception as e:
-            logger.error(f"Failed to convert image data: {str(e)}")
-            raise HTTPException(status_code=400, detail="Invalid image format")
+            logger.error(f"Failed to process image data: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
         
         # Prepare the prompt for Gemini
         prompt = """Analyze this food image and provide the following information in a structured format:
@@ -84,13 +102,22 @@ async def analyze_food_image(file: UploadFile = File(...)):
         # Generate response from Gemini
         try:
             logger.debug("Sending request to Gemini API")
+            
+            # Convert image to base64
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
+            
             response = model.generate_content(
                 contents=[
                     {
                         "role": "user",
                         "parts": [
                             {"text": prompt},
-                            {"inline_data": {"mime_type": "image/jpeg", "data": image_data.decode('latin1')}}
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": image_base64
+                                }
+                            }
                         ]
                     }
                 ]
