@@ -1,5 +1,5 @@
 export { default as Home } from "./home"
-export { default as MapView } from "./map-view"
+export { default as MapView } from "./browse"
 export { default as SmartPantry } from "./smart-pantry"
 export { default as AddFood } from "./add-food"
 export { default as Profile } from "./profile"

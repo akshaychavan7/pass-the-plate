@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Map, PlusCircle, Package, User, MessageCircle, Calendar } from "lucide-react"
+import { Home, Search, PlusCircle, Package, User, MessageCircle, Calendar } from "lucide-react"
 import { useNavigation } from "../context/navigation-context"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 const tabs = [
   { label: "Home", icon: Home, path: "/" },
   { label: "Events", icon: Calendar, path: "/events" },
-  { label: "Map", icon: Map, path: "/map-view" },
+  { label: "Browse", icon: Search, path: "/browse" },
   { label: "Chat", icon: MessageCircle, path: "/chat" },
   { label: "Pantry", icon: Package, path: "/smart-pantry" },
   { label: "Profile", icon: User, path: "/profile" },

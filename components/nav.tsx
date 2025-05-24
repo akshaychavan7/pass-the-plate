@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Home, Map, Trophy, PlusCircle, Leaf } from 'lucide-react'
+import { Home, Search, Trophy, PlusCircle, Leaf } from 'lucide-react'
 
 export function Nav() {
   const pathname = usePathname()
@@ -15,9 +15,9 @@ export function Nav() {
       icon: Home
     },
     {
-      href: '/map-view',
+      href: '/browse',
       label: 'Map',
-      icon: Map
+      icon: Search
     },
     {
       href: '/leaderboard',

@@ -3,11 +3,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader } from '@googlemaps/js-api-loader'
 import { foodItems } from '@/lib/dummy-data'
-import { MapPin, Info, Search, Filter, List, Map, Navigation } from 'lucide-react'
+import { MapPin, Info, Search, Filter, List, Map, Navigation, MessageCircle, ChevronDown } from 'lucide-react'
 import type { FoodItem } from '@/lib/dummy-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/components/ui/use-toast'
+import { useNavigation } from '@/context/navigation-context'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface MapViewProps {
   apiKey: string
@@ -29,11 +37,14 @@ export function MapView({
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [filteredItems, setFilteredItems] = useState<FoodItem[]>(foodItems)
   const [isMapLoading, setIsMapLoading] = useState(true)
+  const [requestedItems, setRequestedItems] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
+  const navigation = useNavigation()
 
   // Filter items based on search and tags
   useEffect(() => {
@@ -118,84 +129,9 @@ export function MapView({
           return
         }
 
-        // Determine initial center based on selected item or user location
-        const initialCenter = selectedItem 
-          ? { 
-              lat: center.lat + (Math.random() - 0.5) * 0.1, // Using the same random offset logic as markers
-              lng: center.lng + (Math.random() - 0.5) * 0.1
-            }
-          : userLocation || center
-
-        // Create map instance
-        const mapOptions: google.maps.MapOptions = {
-          center: initialCenter,
-          zoom: selectedItem ? 15 : zoom, // Zoom in more if an item is selected
-          mapId,
-          styles: [
-            {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'off' }]
-            }
-          ],
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true,
-          zoomControl: true,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          gestureHandling: 'greedy'
-        }
-
-        const map = new google.maps.Map(mapRef.current, mapOptions)
-        
-        if (!isMounted) {
-          return
-        }
-
-        mapInstanceRef.current = map
-
-        // Add markers for food items
-        if (filteredItems && Array.isArray(filteredItems)) {
-          const newMarkers = await Promise.all(filteredItems.map(async (item: FoodItem) => {
-            const lat = center.lat + (Math.random() - 0.5) * 0.1
-            const lng = center.lng + (Math.random() - 0.5) * 0.1
-
-            // Create marker element
-            const markerView = new google.maps.marker.PinElement({
-              background: item.id === selectedItem?.id ? '#00FF00' : '#FF4B4B', // Highlight selected item
-              borderColor: item.id === selectedItem?.id ? '#00FF00' : '#FF4B4B',
-              glyphColor: '#FFFFFF',
-              scale: item.id === selectedItem?.id ? 2 : 1.5 // Make selected item marker larger
-            })
-
-            // Create advanced marker
-            const marker = new google.maps.marker.AdvancedMarkerElement({
-              map,
-              position: { lat, lng },
-              title: item.title,
-              content: markerView.element
-            })
-
-            // Add click listener
-            marker.addListener('click', () => {
-              if (isMounted) {
-                setSelectedItem(item)
-                map.panTo(marker.position as google.maps.LatLng)
-                map.setZoom(15)
-              }
-            })
-
-            return marker
-          }))
-
-          if (isMounted) {
-            markersRef.current = newMarkers
-          }
-        }
-
-        // Set up geolocation
+        // Get user location first
         if (navigator.geolocation) {
-          watchId = navigator.geolocation.watchPosition(
+          navigator.geolocation.getCurrentPosition(
             (position) => {
               if (!isMounted) return
               
@@ -204,15 +140,103 @@ export function MapView({
                 lng: position.coords.longitude
               }
               setUserLocation(location)
-              // Only pan to user location if no item is selected
-              if (mapInstanceRef.current && !selectedItem) {
-                mapInstanceRef.current.panTo(location)
-                mapInstanceRef.current.setZoom(15)
+              
+              // Create map instance with user location
+              const mapOptions: google.maps.MapOptions = {
+                center: location,
+                zoom: 15,
+                mapId,
+                styles: [
+                  {
+                    featureType: 'poi',
+                    elementType: 'labels',
+                    stylers: [{ visibility: 'off' }]
+                  }
+                ],
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true,
+                zoomControl: true,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                gestureHandling: 'greedy'
+              }
+
+              const map = new google.maps.Map(mapRef.current!, mapOptions)
+              
+              if (!isMounted) {
+                return
+              }
+
+              mapInstanceRef.current = map
+
+              // Add markers for food items
+              if (filteredItems && Array.isArray(filteredItems)) {
+                const addMarkers = async () => {
+                  const newMarkers = await Promise.all(filteredItems.map(async (item: FoodItem) => {
+                    const lat = location.lat + (Math.random() - 0.5) * 0.1
+                    const lng = location.lng + (Math.random() - 0.5) * 0.1
+
+                    // Create marker element
+                    const markerView = new google.maps.marker.PinElement({
+                      background: item.id === selectedItem?.id ? '#00FF00' : '#FF4B4B',
+                      borderColor: item.id === selectedItem?.id ? '#00FF00' : '#FF4B4B',
+                      glyphColor: '#FFFFFF',
+                      scale: item.id === selectedItem?.id ? 2 : 1.5
+                    })
+
+                    // Create advanced marker
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                      map,
+                      position: { lat, lng },
+                      title: item.title,
+                      content: markerView.element
+                    })
+
+                    // Add click listener
+                    marker.addListener('click', () => {
+                      if (isMounted) {
+                        setSelectedItem(item)
+                        map.panTo(marker.position as google.maps.LatLng)
+                        map.setZoom(15)
+                      }
+                    })
+
+                    return marker
+                  }))
+
+                  if (isMounted) {
+                    markersRef.current = newMarkers
+                  }
+                }
+
+                addMarkers()
               }
             },
             (error) => {
               if (isMounted) {
                 console.error('Error getting location:', error)
+                // Fallback to default center if geolocation fails
+                const mapOptions: google.maps.MapOptions = {
+                  center,
+                  zoom,
+                  mapId,
+                  styles: [
+                    {
+                      featureType: 'poi',
+                      elementType: 'labels',
+                      stylers: [{ visibility: 'off' }]
+                    }
+                  ],
+                  mapTypeControl: true,
+                  streetViewControl: false,
+                  fullscreenControl: true,
+                  zoomControl: true,
+                  mapTypeId: google.maps.MapTypeId.ROADMAP,
+                  gestureHandling: 'greedy'
+                }
+
+                const map = new google.maps.Map(mapRef.current!, mapOptions)
+                mapInstanceRef.current = map
               }
             },
             {
@@ -247,11 +271,6 @@ export function MapView({
       isMounted = false
       clearTimeout(timeoutId)
       
-      // Clean up geolocation
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId)
-      }
-
       // Clean up all map resources
       cleanupMapResources()
     }
@@ -329,6 +348,42 @@ export function MapView({
     foodItems.flatMap(item => [...item.culturalTags, ...item.dietaryTags])
   ))
 
+  const handleRequestItem = async (item: FoodItem) => {
+    try {
+      // Here you would typically make an API call to your backend
+      // For now, we'll simulate the request
+      setRequestedItems(prev => new Set([...prev, item.id]))
+      
+      // Create a notification for the donor
+      const notification = {
+        type: 'FOOD_REQUEST',
+        itemId: item.id,
+        itemTitle: item.title,
+        requesterId: 'current-user-id', // Replace with actual user ID
+        requesterName: 'Current User', // Replace with actual user name
+        timestamp: new Date().toISOString(),
+        status: 'PENDING'
+      }
+
+      // Store the notification (in a real app, this would be in your backend)
+      localStorage.setItem(`notification_${item.id}`, JSON.stringify(notification))
+
+      toast({
+        title: "Request Sent",
+        description: "The donor will be notified of your request.",
+      })
+
+      // Navigate to chat section
+      navigation.navigate('/chat')
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send request. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)] bg-gray-50">
@@ -345,8 +400,8 @@ export function MapView({
       {/* Search and Filter Bar */}
       <div className="absolute top-4 left-4 right-4 z-10 bg-white rounded-lg shadow-lg p-4">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex-1">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 placeholder="Search for food items..."
@@ -355,10 +410,6 @@ export function MapView({
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" className="shrink-0">
-              <Filter className="w-5 h-5 mr-2" />
-              Filters
-            </Button>
           </div>
           <div className="flex gap-2">
             <Button
@@ -380,19 +431,35 @@ export function MapView({
           </div>
         </div>
 
-        {/* Tags */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {allTags.map((tag) => (
-            <Badge
-              key={tag}
-              variant={selectedTags.includes(tag) ? 'default' : 'outline'}
-              className="cursor-pointer"
-              onClick={() => toggleTag(tag)}
-            >
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {/* Tags Accordion */}
+        <Accordion type="single" collapsible className="mt-4">
+          <AccordionItem value="tags" className="border-none">
+            <AccordionTrigger className="py-2 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {selectedTags.length > 0 
+                    ? `${selectedTags.length} filter${selectedTags.length === 1 ? '' : 's'} active`
+                    : 'Filter by tags'}
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {allTags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                    className="cursor-pointer"
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* Map View */}
@@ -450,6 +517,22 @@ export function MapView({
                       {item.isFree ? 'Free' : `$${item.price}`}
                     </span>
                   </div>
+                  <div className="mt-4">
+                    <Button
+                      variant={requestedItems.has(item.id) ? "secondary" : "default"}
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (!requestedItems.has(item.id)) {
+                          handleRequestItem(item)
+                        }
+                      }}
+                      disabled={requestedItems.has(item.id)}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      {requestedItems.has(item.id) ? 'Request Sent' : 'Request Item'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -500,20 +583,24 @@ export function MapView({
                   <Info className="w-5 h-5" />
                 </Button>
               </div>
+              <div className="mt-4">
+                <Button
+                  variant={requestedItems.has(selectedItem.id) ? "secondary" : "default"}
+                  className="w-full"
+                  onClick={() => {
+                    if (!requestedItems.has(selectedItem.id)) {
+                      handleRequestItem(selectedItem)
+                    }
+                  }}
+                  disabled={requestedItems.has(selectedItem.id)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  {requestedItems.has(selectedItem.id) ? 'Request Sent' : 'Request Item'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Use My Location Button */}
-      {userLocation && (
-        <Button
-          className="absolute bottom-4 right-4 z-10"
-          onClick={handleUseLocation}
-        >
-          <Navigation className="w-5 h-5 mr-2" />
-          Use My Location
-        </Button>
       )}
     </div>
   )

@@ -1,167 +1,196 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
-import { Chat } from "@/components/Chat"
-import { Card } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
-import { MessageCircle, Search, Leaf, Sprout, Recycle, Heart } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from 'react'
+import { RequestNotification } from '@/components/request-notification'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Send } from 'lucide-react'
 
-// Mock data - In a real app, this would come from your backend
-const mockConversations = [
-  {
-    id: "1",
-    recipientId: "2",
-    recipientName: "John Doe",
-    lastMessage: "Is the food still available?",
-    timestamp: new Date(),
-    unread: true,
-  },
-  {
-    id: "2",
-    recipientId: "3",
-    recipientName: "Jane Smith",
-    lastMessage: "I can pick it up tomorrow",
-    timestamp: new Date(Date.now() - 3600000),
-    unread: false,
-  },
-  {
-    id: "3",
-    recipientId: "4",
-    recipientName: "Mike Johnson",
-    lastMessage: "The food was delicious!",
-    timestamp: new Date(Date.now() - 86400000),
-    unread: false,
-  },
-]
+interface RequestNotification {
+  type: 'FOOD_REQUEST'
+  itemId: string
+  itemTitle: string
+  requesterId: string
+  requesterName: string
+  timestamp: string
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+}
+
+interface ChatMessage {
+  id: string
+  senderId: string
+  senderName: string
+  content: string
+  timestamp: string
+}
 
 export default function ChatPage() {
-  const searchParams = useSearchParams()
-  const recipientId = searchParams.get("recipientId")
-  const recipientName = searchParams.get("recipientName")
+  const [notifications, setNotifications] = useState<RequestNotification[]>([])
+  const [activeChats, setActiveChats] = useState<{[key: string]: ChatMessage[]}>({})
+  const [selectedChat, setSelectedChat] = useState<string | null>(null)
+  const [messageInput, setMessageInput] = useState('')
 
-  // Mock current user - In a real app, this would come from your auth system
-  const currentUser = {
-    id: "1",
-    name: "Current User",
+  // Load notifications from localStorage
+  useEffect(() => {
+    const loadNotifications = () => {
+      const storedNotifications: RequestNotification[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('notification_')) {
+          const notification = JSON.parse(localStorage.getItem(key) || '')
+          if (notification.status === 'PENDING') {
+            storedNotifications.push(notification)
+          }
+        }
+      }
+      setNotifications(storedNotifications)
+    }
+
+    loadNotifications()
+    // Set up an interval to check for new notifications
+    const interval = setInterval(loadNotifications, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleAcceptRequest = (notification: RequestNotification) => {
+    // Update notification status
+    localStorage.setItem(
+      `notification_${notification.itemId}`,
+      JSON.stringify({ ...notification, status: 'ACCEPTED' })
+    )
+    
+    // Remove from notifications list
+    setNotifications(prev => prev.filter(n => n.itemId !== notification.itemId))
+    
+    // Initialize chat
+    setActiveChats(prev => ({
+      ...prev,
+      [notification.requesterId]: []
+    }))
+    setSelectedChat(notification.requesterId)
   }
 
-  // Only show selected conversation if we have recipient info from navigation
-  const selectedConversation = recipientId 
-    ? mockConversations.find(c => c.recipientId === recipientId)
-    : null
+  const handleRejectRequest = (notification: RequestNotification) => {
+    // Update notification status
+    localStorage.setItem(
+      `notification_${notification.itemId}`,
+      JSON.stringify({ ...notification, status: 'REJECTED' })
+    )
+    
+    // Remove from notifications list
+    setNotifications(prev => prev.filter(n => n.itemId !== notification.itemId))
+  }
+
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || !selectedChat) return
+
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      senderId: 'current-user-id', // Replace with actual user ID
+      senderName: 'Current User', // Replace with actual user name
+      content: messageInput,
+      timestamp: new Date().toISOString()
+    }
+
+    setActiveChats(prev => ({
+      ...prev,
+      [selectedChat]: [...(prev[selectedChat] || []), newMessage]
+    }))
+
+    setMessageInput('')
+  }
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <div className="bg-emerald-50 p-2 rounded-lg">
-            <Leaf className="h-6 w-6 text-emerald-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Messages</h1>
-        </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search conversations..."
-            className="pl-9 bg-card focus-visible:ring-emerald-600"
-          />
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Conversation List */}
-        <Card className="col-span-1 overflow-hidden bg-card border-emerald-100">
-          <div className="p-4 border-b border-emerald-100 bg-emerald-50/50">
-            <div className="flex items-center gap-2 text-emerald-700">
-              <Sprout className="h-4 w-4" />
-              <span className="text-sm font-medium">Active Conversations</span>
-            </div>
-          </div>
-          <ScrollArea className="h-[600px]">
-            <div className="p-2 space-y-1">
-              {mockConversations.map((conversation) => (
-                <div
-                  key={conversation.id}
-                  className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
-                    selectedConversation?.id === conversation.id 
-                      ? "bg-emerald-50 border border-emerald-200" 
-                      : "hover:bg-emerald-50/50"
-                  )}
-                >
-                  <Avatar className="h-12 w-12 shrink-0">
-                    <div className="bg-emerald-600 text-white h-full w-full flex items-center justify-center">
-                      {conversation.recipientName[0]}
-                    </div>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-foreground truncate">
-                        {conversation.recipientName}
-                      </p>
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {conversation.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm text-muted-foreground truncate">
-                        {conversation.lastMessage}
-                      </p>
-                      {conversation.unread && (
-                        <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                </div>
+    <div className="container mx-auto p-4 h-[calc(100vh-4rem)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+        {/* Notifications and Chat List */}
+        <div className="md:col-span-1 space-y-4">
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold mb-2">Requests</h2>
+              {notifications.map(notification => (
+                <RequestNotification
+                  key={notification.itemId}
+                  notification={notification}
+                  onAccept={handleAcceptRequest}
+                  onReject={handleRejectRequest}
+                />
               ))}
             </div>
-          </ScrollArea>
-        </Card>
+          )}
 
-        {/* Chat Interface */}
-        <div className="col-span-2">
-          {selectedConversation ? (
-            <Chat
-              recipientId={selectedConversation.recipientId}
-              recipientName={selectedConversation.recipientName}
-              currentUserId={currentUser.id}
-              currentUserName={currentUser.name}
-            />
-          ) : (
-            <Card className="h-[600px] flex items-center justify-center bg-card border-emerald-100">
-              <div className="text-center p-4 sm:p-8">
-                <div className="bg-emerald-50 rounded-full p-4 w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 flex items-center justify-center">
-                  <Leaf className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600" />
+          {/* Chat List */}
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Active Chats</h2>
+            {Object.entries(activeChats).map(([userId, messages]) => (
+              <Card
+                key={userId}
+                className={`p-3 mb-2 cursor-pointer hover:bg-gray-50 ${
+                  selectedChat === userId ? 'bg-gray-50' : ''
+                }`}
+                onClick={() => setSelectedChat(userId)}
+              >
+                <div className="font-medium">
+                  {messages[0]?.senderName || 'Chat User'}
                 </div>
-                <h3 className="text-xl font-medium text-foreground mb-3">Start a Conversation</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Connect with food donors and recipients to coordinate food sharing. 
-                  Help reduce food waste and make a positive impact on our environment.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                  <div className="bg-emerald-50 p-4 rounded-lg">
-                    <Recycle className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
-                    <p className="text-sm text-emerald-700">Reduce Waste</p>
-                  </div>
-                  <div className="bg-emerald-50 p-4 rounded-lg">
-                    <Heart className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
-                    <p className="text-sm text-emerald-700">Share Food</p>
-                  </div>
-                  <div className="bg-emerald-50 p-4 rounded-lg">
-                    <Sprout className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
-                    <p className="text-sm text-emerald-700">Grow Community</p>
-                  </div>
+                <div className="text-sm text-gray-600 truncate">
+                  {messages[messages.length - 1]?.content || 'No messages yet'}
                 </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Browse available food items</p>
-                  <p>• Click the chat button to start a conversation</p>
-                  <p>• Coordinate pickup times and locations</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Chat Window */}
+        <div className="md:col-span-2 flex flex-col h-full">
+          {selectedChat ? (
+            <>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {activeChats[selectedChat]?.map(message => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.senderId === 'current-user-id' ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-lg p-3 ${
+                        message.senderId === 'current-user-id'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-gray-100'
+                      }`}
+                    >
+                      <div className="text-sm font-medium mb-1">
+                        {message.senderName}
+                      </div>
+                      <div>{message.content}</div>
+                      <div className="text-xs opacity-70 mt-1">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t p-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    placeholder="Type a message..."
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  />
+                  <Button onClick={handleSendMessage}>
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            </Card>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Select a chat to start messaging
+            </div>
           )}
         </div>
       </div>

@@ -2,8 +2,8 @@ import { Metadata } from 'next'
 import { MapView } from '@/components/map-view'
 
 export const metadata: Metadata = {
-  title: 'Map View | Pass the Plate',
-  description: 'Find food sharing locations near you',
+  title: 'Browse | Pass the Plate',
+  description: 'Browse available food items listed for donation and discounted prices',
 }
 
 export default function MapViewPage() {
