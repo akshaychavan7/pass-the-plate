@@ -71,35 +71,7 @@ export function Chat({ recipientId, recipientName, currentUserId, currentUserNam
   };
 
   return (
-    <Card className="w-full h-[600px] flex flex-col bg-background border-emerald-100">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-emerald-100 flex items-center gap-3 bg-card">
-        <Avatar className="h-10 w-10 shrink-0">
-          <div className="bg-emerald-600 text-white h-full w-full flex items-center justify-center">
-            {recipientName[0]}
-          </div>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-foreground truncate">{recipientName}</h2>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">
-              {isTyping ? 'Typing...' : 'Online'}
-            </p>
-            {!isTyping && (
-              <div className="flex items-center gap-1">
-                <Sprout className="h-3 w-3 text-emerald-600 shrink-0" />
-                <span className="text-xs text-emerald-600 truncate">Active in food sharing</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="bg-emerald-50 p-2 rounded-lg">
-            <Recycle className="h-4 w-4 text-emerald-600" />
-          </div>
-        </div>
-      </div>
-      
+    <div className="h-full flex flex-col">
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 && (
@@ -198,6 +170,6 @@ export function Chat({ recipientId, recipientName, currentUserId, currentUserNam
           </Button>
         </div>
       </form>
-    </Card>
+    </div>
   );
 } 
