@@ -98,31 +98,30 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with gradient background */}
-      <div className="relative bg-gradient-to-b from-green-600 to-green-500 text-white">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="relative container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
+      {/* Header with subtle background */}
+      <div className="relative bg-background border-b">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-1">Events</h1>
-              <p className="text-white/80 text-sm">Discover and join community events</p>
+              <h1 className="text-2xl font-semibold mb-1">Events</h1>
+              <p className="text-muted-foreground text-sm">Discover and join community events</p>
             </div>
             <Button 
               onClick={() => router.push('/events/create')}
               size="sm"
-              className="bg-white text-green-600 hover:bg-white/90 shadow-sm"
+              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Event
             </Button>
           </div>
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search events..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 focus:bg-white/20"
+              className="pl-10"
             />
           </div>
         </div>
