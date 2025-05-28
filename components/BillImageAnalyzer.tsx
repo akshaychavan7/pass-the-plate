@@ -103,16 +103,23 @@ export function BillImageAnalyzer() {
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error("Backend error:", errorData)
         throw new Error(errorData.detail || "Failed to parse bill")
       }
 
       const data = await response.json()
+      if (!Array.isArray(data)) {
+        console.error("Invalid response format:", data)
+        throw new Error("Invalid response format from server")
+      }
+
       setParsedItems(data)
       toast({
         title: "Bill Parsed",
         description: "Receipt data extracted successfully!",
       })
     } catch (error) {
+      console.error("Error parsing bill:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to analyze bill.",

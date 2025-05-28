@@ -7,8 +7,14 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Search, Filter, Clock, MapPin, Leaf, Share2, Edit2 } from 'lucide-react'
+import { Plus, Search, Filter, Clock, MapPin, Leaf, Share2, Edit2, Upload, Receipt } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function SmartPantryPage() {
   const router = useRouter()
@@ -16,18 +22,49 @@ export default function SmartPantryPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex justify-between items-center px-6 py-8 bg-gradient-to-b from-green-50 to-white rounded-2xl">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-green-900">Smart Pantry</h1>
-            <p className="text-green-700">Share food, reduce waste, build community</p>
+        <div className="px-6 py-8 bg-gradient-to-b from-green-50 to-white rounded-2xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-green-900">Smart Pantry</h1>
+              <p className="text-green-700">Share food, reduce waste, build community</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+                      onClick={() => router.push('/add-bill')}
+                    >
+                      <Receipt className="h-4 w-4" />
+                      Scan Receipt
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Upload a grocery receipt to add multiple items at once</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => router.push('/add-food')}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Single Item
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add a single food item manually</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
-          <Button 
-            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => router.push('/add-food')}
-          >
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
         </div>
 
         <Card className="border-green-100">
