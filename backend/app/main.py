@@ -159,14 +159,36 @@ async def parse_bill_with_llm(file: UploadFile = File(...)):
                 logger.info(f"Saved PDF to temporary file: {temp_pdf_path}")
                 
                 try:
-                    images = convert_from_bytes(file_data, first_page=1, last_page=1)
-                    logger.info(f"PDF conversion successful. Number of images: {len(images)}")
+                    # Try to convert PDF to image with more detailed error handling
+                    try:
+                        images = convert_from_bytes(
+                            file_data,
+                            first_page=1,
+                            last_page=1,
+                            dpi=300,  # Increased DPI for better quality
+                            fmt="jpeg",
+                            thread_count=1,
+                            use_pdftocairo=True  # Use pdftocairo for better quality
+                        )
+                        logger.info(f"PDF conversion successful. Number of images: {len(images)}")
+                    except Exception as conv_error:
+                        logger.error(f"PDF conversion error: {str(conv_error)}")
+                        logger.error(traceback.format_exc())
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"PDF conversion failed: {str(conv_error)}"
+                        )
                     
                     if not images:
                         raise HTTPException(status_code=400, detail="Could not convert PDF to image.")
                     
+                    # Save the converted image for debugging
+                    temp_image_path = f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                    images[0].save(temp_image_path, "JPEG", quality=95)
+                    logger.info(f"Saved converted image to: {temp_image_path}")
+                    
                     buffer = io.BytesIO()
-                    images[0].save(buffer, format="JPEG", quality=90)
+                    images[0].save(buffer, format="JPEG", quality=95)
                     image_data = buffer.getvalue()
                     logger.info(f"Converted image size: {len(image_data)} bytes")
                     
@@ -175,12 +197,16 @@ async def parse_bill_with_llm(file: UploadFile = File(...)):
                     logger.error(traceback.format_exc())
                     raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
                 finally:
-                    # Clean up temporary file
+                    # Clean up temporary files
                     try:
-                        os.remove(temp_pdf_path)
-                        logger.info(f"Cleaned up temporary file: {temp_pdf_path}")
+                        if os.path.exists(temp_pdf_path):
+                            os.remove(temp_pdf_path)
+                            logger.info(f"Cleaned up temporary PDF file: {temp_pdf_path}")
+                        if os.path.exists(temp_image_path):
+                            os.remove(temp_image_path)
+                            logger.info(f"Cleaned up temporary image file: {temp_image_path}")
                     except Exception as e:
-                        logger.warning(f"Failed to clean up temporary file: {str(e)}")
+                        logger.warning(f"Failed to clean up temporary files: {str(e)}")
                         
             except Exception as e:
                 logger.error(f"PDF processing failed: {str(e)}")
@@ -191,7 +217,14 @@ async def parse_bill_with_llm(file: UploadFile = File(...)):
         else:
             raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF or image.")
 
+        # Save the image data for debugging
+        temp_final_image = f"final_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        with open(temp_final_image, "wb") as f:
+            f.write(image_data)
+        logger.info(f"Saved final image to: {temp_final_image}")
+
         image_base64 = base64.b64encode(image_data).decode("utf-8")
+        logger.info(f"Base64 encoded image size: {len(image_base64)} characters")
 
         # Prompt for Gemini
         prompt = """
@@ -232,7 +265,7 @@ Make sure the output is valid JSON. If the purchase date is not visible, return 
         except Exception as gemini_error:
             logger.error("Gemini API call failed")
             logger.error(traceback.format_exc())
-            raise HTTPException(status_code=500, detail="Gemini API failed")
+            raise HTTPException(status_code=500, detail=f"Gemini API failed: {str(gemini_error)}")
 
         # Clean response
         raw_text = response.text.strip()
@@ -248,6 +281,15 @@ Make sure the output is valid JSON. If the purchase date is not visible, return 
             if not isinstance(items, list):
                 raise ValueError("Gemini response is not a list")
             validated_items = [BillItem(**item) for item in items]
+            
+            # Clean up final image
+            try:
+                if os.path.exists(temp_final_image):
+                    os.remove(temp_final_image)
+                    logger.info(f"Cleaned up final image file: {temp_final_image}")
+            except Exception as e:
+                logger.warning(f"Failed to clean up final image file: {str(e)}")
+                
             return validated_items
         except Exception as parse_error:
             logger.error("Failed to parse Gemini output")
@@ -255,13 +297,13 @@ Make sure the output is valid JSON. If the purchase date is not visible, return 
             logger.error(traceback.format_exc())
             raise HTTPException(
                 status_code=500,
-                detail="Failed to parse JSON from Gemini response"
+                detail=f"Failed to parse JSON from Gemini response: {str(parse_error)}"
             )
 
     except Exception as e:
         logger.error(f"Error parsing bill: {str(e)}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Failed to extract receipt data")
+        raise HTTPException(status_code=500, detail=f"Failed to extract receipt data: {str(e)}")
 
 
 
