@@ -149,15 +149,43 @@ async def parse_bill_with_llm(file: UploadFile = File(...)):
         # Convert PDF to JPEG
         if content_type == "application/pdf":
             try:
-                images = convert_from_bytes(file_data, first_page=1, last_page=1)
-                if not images:
-                    raise HTTPException(status_code=400, detail="Could not convert PDF to image.")
-                buffer = io.BytesIO()
-                images[0].save(buffer, format="JPEG", quality=90)
-                image_data = buffer.getvalue()
+                logger.info("Starting PDF conversion...")
+                logger.debug(f"PDF data size: {len(file_data)} bytes")
+                
+                # Save PDF data to a temporary file for debugging
+                temp_pdf_path = f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                with open(temp_pdf_path, "wb") as f:
+                    f.write(file_data)
+                logger.info(f"Saved PDF to temporary file: {temp_pdf_path}")
+                
+                try:
+                    images = convert_from_bytes(file_data, first_page=1, last_page=1)
+                    logger.info(f"PDF conversion successful. Number of images: {len(images)}")
+                    
+                    if not images:
+                        raise HTTPException(status_code=400, detail="Could not convert PDF to image.")
+                    
+                    buffer = io.BytesIO()
+                    images[0].save(buffer, format="JPEG", quality=90)
+                    image_data = buffer.getvalue()
+                    logger.info(f"Converted image size: {len(image_data)} bytes")
+                    
+                except Exception as e:
+                    logger.error(f"PDF conversion failed with error: {str(e)}")
+                    logger.error(traceback.format_exc())
+                    raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
+                finally:
+                    # Clean up temporary file
+                    try:
+                        os.remove(temp_pdf_path)
+                        logger.info(f"Cleaned up temporary file: {temp_pdf_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to clean up temporary file: {str(e)}")
+                        
             except Exception as e:
-                logger.error(f"PDF conversion failed: {e}")
-                raise HTTPException(status_code=500, detail="PDF conversion failed.")
+                logger.error(f"PDF processing failed: {str(e)}")
+                logger.error(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"PDF processing failed: {str(e)}")
         elif content_type.startswith("image/"):
             image_data = file_data
         else:

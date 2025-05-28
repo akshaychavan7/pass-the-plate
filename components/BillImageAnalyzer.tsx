@@ -21,11 +21,13 @@ export function BillImageAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [parsedItems, setParsedItems] = useState<BillItem[]>([])
+  const [currentFile, setCurrentFile] = useState<File | null>(null)
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
+    setCurrentFile(file)
     setParsedItems([])
 
     if (file.size > 5 * 1024 * 1024) {
@@ -37,18 +39,23 @@ export function BillImageAnalyzer() {
       return
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please upload an image or PDF file',
+        variant: 'destructive',
       })
       return
     }
 
     const reader = new FileReader()
     reader.onloadend = () => {
-      setSelectedImage(reader.result as string)
+      if (file.type === 'application/pdf') {
+        // For PDFs, we'll show a placeholder with the PDF icon
+        setSelectedImage('/pdf-icon.png') // You'll need to add this icon to your public folder
+      } else {
+        setSelectedImage(reader.result as string)
+      }
     }
     reader.readAsDataURL(file)
 
@@ -56,26 +63,34 @@ export function BillImageAnalyzer() {
     const formData = new FormData()
 
     try {
-      const image = await createImageBitmap(file)
-      const canvas = document.createElement("canvas")
-      canvas.width = image.width
-      canvas.height = image.height
-      const ctx = canvas.getContext("2d")
-      if (!ctx) throw new Error("Could not get canvas context")
+      if (file.type === 'application/pdf') {
+        // For PDFs, read as ArrayBuffer and create a new File
+        const arrayBuffer = await file.arrayBuffer()
+        const pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' })
+        formData.append("file", pdfBlob, file.name)
+      } else {
+        // For images, convert to JPEG
+        const image = await createImageBitmap(file)
+        const canvas = document.createElement("canvas")
+        canvas.width = image.width
+        canvas.height = image.height
+        const ctx = canvas.getContext("2d")
+        if (!ctx) throw new Error("Could not get canvas context")
 
-      ctx.drawImage(image, 0, 0)
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob)
-          else reject("Could not convert image to blob")
-        }, "image/jpeg", 0.9)
-      })
+        ctx.drawImage(image, 0, 0)
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob)
+            else reject("Could not convert image to blob")
+          }, "image/jpeg", 0.9)
+        })
 
-      formData.append("file", blob, "bill.jpg")
+        formData.append("file", blob, "bill.jpg")
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to process image. Please try again.",
+        description: "Failed to process file. Please try again.",
         variant: "destructive",
       })
       setIsAnalyzing(false)
@@ -130,12 +145,12 @@ export function BillImageAnalyzer() {
             <p className="mb-2 text-sm text-gray-500">
               <span className="font-semibold">Click to upload</span> or drag and drop
             </p>
-            <p className="text-xs text-gray-500">JPG, JPEG, PNG (MAX. 5MB)</p>
+            <p className="text-xs text-gray-500">PNG, JPG, JPEG or PDF (MAX. 5MB)</p>
           </div>
           <input
             type="file"
             className="hidden"
-            accept="image/*"
+            accept="image/*,.pdf"
             onChange={handleImageUpload}
             disabled={isAnalyzing}
           />
@@ -145,7 +160,14 @@ export function BillImageAnalyzer() {
       {/* Image preview */}
       {selectedImage && (
         <div className="relative w-full h-48 rounded-lg overflow-hidden">
-          <Image src={selectedImage} alt="Uploaded bill" fill className="object-cover" />
+          {currentFile?.type === 'application/pdf' ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+              <div className="text-4xl mb-2">📄</div>
+              <p className="text-sm text-gray-500">{currentFile.name}</p>
+            </div>
+          ) : (
+            <Image src={selectedImage} alt="Uploaded bill" fill className="object-cover" />
+          )}
         </div>
       )}
 
