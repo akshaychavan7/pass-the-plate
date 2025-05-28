@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pdf2image import convert_from_bytes
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
@@ -13,6 +14,7 @@ import base64
 import hashlib
 from datetime import datetime, timedelta
 import json
+
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG level
@@ -112,6 +114,13 @@ class EnvironmentalImpactRequest(BaseModel):
     foodItems: List[FoodItem]
     totalImpact: EnvironmentalImpact
 
+class BillItem(BaseModel):
+    name: str
+    quantity: Optional[str]
+    date_bought: Optional[str]
+    estimated_expiry: Optional[str]
+
+
 def calculate_image_hash(image_data: bytes) -> str:
     """Calculate a hash of the image data for caching."""
     return hashlib.sha256(image_data).hexdigest()
@@ -125,6 +134,108 @@ def calculate_cache_key(food_items: List[FoodItem], total_impact: EnvironmentalI
     }, sort_keys=True)
     # Create a hash of the string
     return hashlib.sha256(data_str.encode()).hexdigest()
+
+
+@app.post("/parse-bill-llm/", response_model=List[BillItem])
+async def parse_bill_with_llm(file: UploadFile = File(...)):
+    try:
+        file_data = await file.read()
+        if len(file_data) < 100:
+            raise HTTPException(status_code=400, detail="Invalid or empty file.")
+
+        content_type = file.content_type
+        logger.info(f"Received file: {file.filename}, type: {content_type}, size: {len(file_data)} bytes")
+
+        # Convert PDF to JPEG
+        if content_type == "application/pdf":
+            try:
+                images = convert_from_bytes(file_data, first_page=1, last_page=1)
+                if not images:
+                    raise HTTPException(status_code=400, detail="Could not convert PDF to image.")
+                buffer = io.BytesIO()
+                images[0].save(buffer, format="JPEG", quality=90)
+                image_data = buffer.getvalue()
+            except Exception as e:
+                logger.error(f"PDF conversion failed: {e}")
+                raise HTTPException(status_code=500, detail="PDF conversion failed.")
+        elif content_type.startswith("image/"):
+            image_data = file_data
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a PDF or image.")
+
+        image_base64 = base64.b64encode(image_data).decode("utf-8")
+
+        # Prompt for Gemini
+        prompt = """
+You are given an image of a grocery store receipt. Please extract the information about food items and format it as a JSON array of the following structure:
+
+[
+  {
+    "name": "string (product name)",
+    "quantity": "string (e.g., '2 lbs', '1 dozen')",
+    "date_bought": "YYYY-MM-DD format, if available",
+    "estimated_expiry": "YYYY-MM-DD (based on typical shelf life)"
+  }
+]
+
+Make sure the output is valid JSON. If the purchase date is not visible, return null. Filter out non-food items and return the JSON.
+"""
+
+        try:
+            logger.info("Sending image to Gemini for parsing...")
+            response = model.generate_content(
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": image_base64
+                                }
+                            }
+                        ]
+                    }
+                ]
+            )
+            logger.info("Gemini response received")
+            logger.debug(f"Raw Gemini response: {response.text}")
+        except Exception as gemini_error:
+            logger.error("Gemini API call failed")
+            logger.error(traceback.format_exc())
+            raise HTTPException(status_code=500, detail="Gemini API failed")
+
+        # Clean response
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+        raw_text = raw_text.strip()
+
+        # Parse JSON
+        try:
+            items = json.loads(raw_text)
+            if not isinstance(items, list):
+                raise ValueError("Gemini response is not a list")
+            validated_items = [BillItem(**item) for item in items]
+            return validated_items
+        except Exception as parse_error:
+            logger.error("Failed to parse Gemini output")
+            logger.error(f"Gemini raw output: {response.text}")
+            logger.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse JSON from Gemini response"
+            )
+
+    except Exception as e:
+        logger.error(f"Error parsing bill: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Failed to extract receipt data")
+
+
 
 @app.post("/analyze-food-image/", response_model=FoodAnalysis)
 async def analyze_food_image(file: UploadFile = File(...)):
